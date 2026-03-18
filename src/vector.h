@@ -1,7 +1,10 @@
 #include <cmath>
 
-#pragma once
+#pragma namespace
+#define PARRALEL_THRESHOLD 0.2
+
 namespace Vector {
+
 class Vector {
   public:
     float x;
@@ -14,5 +17,7 @@ class Vector {
     Vector unitVector();
 
     float dotProduct(Vector a, Vector b);
+
+    bool almostParralel(Vector &a, Vector &b);
 };
 } // namespace Vector
