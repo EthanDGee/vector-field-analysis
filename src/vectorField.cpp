@@ -1,23 +1,28 @@
 #include "vectorField.h"
 #include "streamLine.h"
+#include "vector.h"
 #include <cmath>
 #include <utility>
 
 namespace VectorField {
 
-Vector::Vector VectorField::lookUp(int x, int y) { return field[x][y]; }
-
 std::pair<int, int> VectorField::pointsTo(int x, int y) {
     Vector::Vector start = field[x][y];
 
     float xSpacing = (xMax - xMin) / (field.size() - 1);
-    float ySpacing = yMax - yMin / (field[0].size() - 1);
+    float ySpacing = (yMax - yMin) / (field[0].size() - 1);
 
     // find the nearest coordinate that the vector points accounting for scale
-    int nearestX = static_cast<int>(std::round((x + start.x) / xSpacing));
-    int nearestY = static_cast<int>(std::round((y + start.y) / ySpacing));
+    int nearestX =
+        static_cast<int>(std::round((x * xSpacing + start.x) / xSpacing));
+    int nearestY =
+        static_cast<int>(std::round((y * ySpacing + start.y) / ySpacing));
 
     return {nearestX, nearestY};
+}
+
+std::pair<int, int> VectorField::pointsTo(std::pair<int, int> coords) {
+    return VectorField::pointsTo(coords.first, coords.second);
 }
 
 void VectorField::mergeStreamLines(
@@ -32,21 +37,21 @@ void VectorField::mergeStreamLines(
         start->path.push_back(point);
         field[point.first][point.second].stream = start;
     }
+
+    delete &end;
 }
 
-void VectorField::flowFromVector(Vector::Vector &vector) {
-    int x = static_cast<int>(vector.x);
-    int y = static_cast<int>(vector.y);
+void VectorField::flowFromVector(std::pair<int, int> startCords) {
 
-    auto startCords = std::pair<int, int>(x, y);
+    Vector::Vector &vector = field[startCords.first][startCords.second];
 
     // if not a member of a streamline create a new one
     if (vector.stream == nullptr) {
         auto newStream = std::make_shared<StreamLine::StreamLine>(startCords);
-        field[x][y].stream = newStream;
+        vector.stream = newStream;
     }
 
-    std::pair<int, int> destCords = pointsTo(x, y);
+    std::pair<int, int> destCords = pointsTo(startCords);
     Vector::Vector &destination = field[destCords.first][destCords.second];
 
     if (destination.stream == nullptr) {

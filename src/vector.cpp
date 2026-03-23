@@ -10,7 +10,7 @@ Vector Vector::unitVector() {
 }
 float dotProduct(Vector a, Vector b) { return a.x * b.x + a.y * b.y; }
 
-bool almostParralel(Vector &a, Vector &b) {
+bool almostParrallel(Vector &a, Vector &b) {
 
     float x_diff = std::abs(a.x - b.x);
     float y_diff = std::abs(a.y - b.y);

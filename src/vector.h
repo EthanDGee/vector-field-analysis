@@ -1,9 +1,9 @@
+#pragma once
 #include "streamLine.h"
 #include <cmath>
 #include <cstddef>
 #include <memory>
 
-#pragma namespace
 #define PARRALEL_THRESHOLD 0.2
 
 namespace Vector {
@@ -16,12 +16,11 @@ class Vector {
 
     Vector(float x, float y) : x(x), y(y), stream(nullptr) {};
 
-    float magnitude();
+    float magnitude() const;
 
-    Vector unitVector();
-
-    float dotProduct(Vector a, Vector b);
-
-    bool almostParralel(Vector &a, Vector &b);
+    Vector unitVector() const;
 };
+float dotProduct(Vector a, Vector b);
+
+bool almostParrallel(Vector &a, Vector &b);
 } // namespace Vector

@@ -1,10 +1,10 @@
+#pragma once
 #include "streamLine.h"
 #include "vector.h"
 #include <memory>
 #include <tuple>
 #include <vector>
 
-#pragma once
 namespace VectorField {
 
 class VectorField {
@@ -17,10 +17,12 @@ class VectorField {
         : xMin(xMin), xMax(xMax), yMin(yMin), yMax(yMax), field(field) {}
 
     std::pair<int, int> pointsTo(int x, int y);
-    Vector::Vector lookUp(int x, int y);
+    std::pair<int, int> pointsTo(std::pair<int, int> coords);
+
     void mergeStreamLines(std::shared_ptr<StreamLine::StreamLine> start,
                           std::shared_ptr<StreamLine::StreamLine> end);
-    void flowFromVector(Vector::Vector &vector);
+
+    void flowFromVector(std::pair<int, int> startCords);
 };
 
 } // namespace VectorField

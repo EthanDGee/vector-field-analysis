@@ -1,7 +1,7 @@
+#pragma once
 #include <tuple>
 #include <vector>
 
-#pragma once
 namespace StreamLine {
 class StreamLine {
   public:
