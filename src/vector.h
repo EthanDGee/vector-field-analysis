@@ -1,4 +1,7 @@
+#include "streamLine.h"
 #include <cmath>
+#include <cstddef>
+#include <memory>
 
 #pragma namespace
 #define PARRALEL_THRESHOLD 0.2
@@ -9,8 +12,9 @@ class Vector {
   public:
     float x;
     float y;
+    std::shared_ptr<StreamLine::StreamLine> stream;
 
-    Vector(float x, float y) { Vector{x, y}; };
+    Vector(float x, float y) : x(x), y(y), stream(nullptr) {};
 
     float magnitude();
 
