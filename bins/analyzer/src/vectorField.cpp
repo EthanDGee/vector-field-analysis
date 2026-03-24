@@ -38,7 +38,7 @@ void VectorField::mergeStreamLines(
         field[point.first][point.second].stream = start;
     }
 
-    delete &end;
+
 }
 
 void VectorField::flowFromVector(std::pair<int, int> startCords) {

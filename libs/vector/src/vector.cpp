@@ -2,9 +2,9 @@
 
 namespace Vector {
 
-float Vector::magnitude() { return std::sqrt(x * x + y * y); }
+float Vector::magnitude() const { return std::sqrt(x * x + y * y); }
 
-Vector Vector::unitVector() {
+Vector Vector::unitVector() const {
     const float magnitude = Vector::magnitude();
     return Vector(x / magnitude, y / magnitude);
 }
