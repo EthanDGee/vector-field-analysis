@@ -1,7 +1,6 @@
 #include "vector.hpp"
 
 namespace Vector {
-
 float Vector::magnitude() const {
     return std::sqrt((x * x) + (y * y));
 }
@@ -16,7 +15,6 @@ float dotProduct(const Vector& a, const Vector& b) {
 }
 
 bool almostParrallel(Vector& a, Vector& b) {
-
     float x_diff = std::abs(a.x - b.x);
     float y_diff = std::abs(a.y - b.y);
 
