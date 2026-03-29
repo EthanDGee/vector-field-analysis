@@ -1,30 +1,32 @@
 #pragma once
-#include "streamLine.hpp"
+#include "streamline.hpp"
 
-#include <cmath>
-#include <cstddef>
 #include <memory>
-
-#define PARRALEL_THRESHOLD 0.2
 
 namespace Vector {
 
-class Vector {
+inline constexpr float kParallelThreshold = 0.2f;
+
+class Vec2 {
   public:
     float x;
     float y;
-    std::shared_ptr<StreamLine::StreamLine> stream;
+    std::shared_ptr<Streamline> stream;
 
-    Vector(float x, float y)
+    Vec2(float x, float y)
         : x(x),
           y(y),
           stream(nullptr) {}
 
     [[nodiscard]] float magnitude() const;
 
-    [[nodiscard]] Vector unitVector() const;
+    [[nodiscard]] Vec2 unitVector() const;
 };
-float dotProduct(const Vector& a, const Vector& b);
 
-bool almostParrallel(Vector& a, Vector& b);
+[[nodiscard]] float dotProduct(const Vec2& a, const Vec2& b);
+
+// Precondition: both vectors must be near-unit. This compares component-wise
+// difference, not direction - non-unit inputs give unreliable results.
+[[nodiscard]] bool almostParallel(const Vec2& a, const Vec2& b);
+
 } // namespace Vector
