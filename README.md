@@ -48,7 +48,7 @@ mise run test    # run all tests
 | `mise run test:sanitize` | Run tests under AddressSanitizer + UBSanitizer |
 | `mise run test:coverage` | Run tests and generate coverage report |
 | `mise run links` | Check for broken links in markdown files |
-| `mise run ci` | Full pipeline — mirrors all GitHub Actions jobs |
+| `mise run ci` | Full pipeline -- mirrors all GitHub Actions jobs |
 | `mise run run:bin:simulator` | Build and run the simulator with `karman_street.toml` (writes `field.h5`) |
 | `mise run run:bin:analyzer` | Build and run the analyzer (reads `field.h5`) |
 | `mise run visualize` | Animate `field.h5` as a quiver plot |
@@ -73,7 +73,7 @@ Individual targets:
 |---|---|---|
 | cmake | latest | Build system |
 | ninja | latest | Build backend |
-| uv | latest | Python package manager (visualize, codespell, gcovr — tools fetched on demand via `uvx`) |
+| uv | latest | Python package manager (visualize, codespell, gcovr -- tools fetched on demand via `uvx`) |
 | clang-format | 22.1.1 | Code formatter |
 | clang-tidy | 22.1.0 | Static analysis / linter |
 | lychee | latest | Markdown link checker |
@@ -98,7 +98,7 @@ Individual targets:
 
 ## Code Quality
 
-- **Compiler flags:** `-Wall -Wextra -Wpedantic -Werror` — warnings are errors
+- **Compiler flags:** `-Wall -Wextra -Wpedantic -Werror` -- warnings are errors
 - **Formatting:** clang-format 22.1.1 (LLVM style, indent 4, column limit 100)
 - **Linting:** clang-tidy with bugprone, modernize, performance, and readability checks; all warnings treated as errors
 

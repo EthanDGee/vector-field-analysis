@@ -16,6 +16,8 @@ int main(int argc, char* argv[]) {
         std::cout << "Loaded " << inPath << " (" << width << "x" << height << ", " << numSteps
                   << " steps)\n";
 
+        // Trace a single streamline step from the origin cell in each time step.
+        // Each step is independent; a full analysis would seed every cell in the grid.
         for (int s = 0; s < numSteps; ++s) {
             VectorField::FieldGrid grid(data.xMin, data.xMax, data.yMin, data.yMax, data.steps[s]);
             grid.traceStreamlineStep({0, 0});

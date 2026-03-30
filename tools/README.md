@@ -36,3 +36,34 @@ uv run tools/visualize.py field.h5 --stride 2
 
 - Python >= 3.11
 - `h5py`, `matplotlib`, `numpy` (fetched automatically by `uv run`)
+
+## field_math.py
+
+Adds or subtracts two simulator `.h5` files element-wise, producing a new `.h5` file
+in the same format. Useful for computing field differences or superposing results.
+Both input files must have the same shape (`steps x height x width`).
+Spatial metadata (`xMin`, `xMax`, etc.) is taken from the first file.
+
+### Usage
+
+```sh
+# add two fields
+uv run tools/field_math.py add a.h5 b.h5 out.h5
+
+# subtract b from a
+uv run tools/field_math.py sub a.h5 b.h5 out.h5
+```
+
+### Options
+
+| Argument | Description |
+|----------|-------------|
+| `op` | Operation: `add` or `sub` |
+| `a` | First `.h5` file |
+| `b` | Second `.h5` file |
+| `out` | Output `.h5` file |
+
+### Dependencies
+
+- Python >= 3.11
+- `h5py`, `numpy` (fetched automatically by `uv run`)

@@ -4,10 +4,8 @@ Project-level documentation spanning all libraries and binaries.
 
 ## Contents
 
-- **Architecture** -> how `libs/` and `bins/` fit together, data flow between simulator and analyzer
-- **Research notes** -> background theory and scientific context behind the vector field analysis
-- **Development guide** -> how to build, test, format, lint, and contribute
-- **Roadmap** -> planned features and future direction
+- [`architecture.md`](architecture.md) -- component overview, data flow, dependency map
+- [`development.md`](development.md) -- build, test, format, lint, CI, adding a new field type
 
 ## Visualization
 

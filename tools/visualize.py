@@ -35,6 +35,8 @@ def make_grid(vx, vy, attrs, stride):
     steps, height, width = vx.shape
     x = np.linspace(attrs.get("xMin", -1), attrs.get("xMax", 1), width)
     y = np.linspace(attrs.get("yMin", -1), attrs.get("yMax", 1), height)
+    # Stride subsamples the grid to reduce arrow clutter -- only every S-th
+    # cell in each axis is shown, keeping the plot readable at high resolutions.
     X, Y = np.meshgrid(x[::stride], y[::stride])
     return X, Y, steps
 
@@ -49,6 +51,11 @@ def plot_step(ax, vx, vy, attrs, stride, step):
     X, Y, _ = make_grid(vx, vy, attrs, stride)
     mag = speed(vx_s, vy_s)
     ax.clear()
+    # plasma is perceptually uniform, making speed differences easier to read
+    # than with non-uniform colormaps like rainbow or jet.
+    # scale=None lets matplotlib auto-scale arrow lengths to the data range,
+    # preventing arrows from being invisible or overflowing the axes when
+    # field magnitudes vary across steps.
     q = ax.quiver(X, Y, vx_s, vy_s, mag, cmap="plasma", pivot="mid", scale=None)
     field_type = attrs.get("type", "unknown")
     total = vx.shape[0]
@@ -82,6 +89,9 @@ def animate(vx, vy, attrs, stride, save):
         return (q,)
 
     interval = max(1000 // steps, 40)  # aim for ~25 fps, floor at 40 ms
+    # blit=False because the colorbar is redrawn every frame when the speed
+    # range changes -- blitting only re-renders explicitly marked artists and
+    # would leave the colorbar stale.
     anim = FuncAnimation(fig, update, frames=steps, interval=interval, blit=False)
     plt.tight_layout()
 

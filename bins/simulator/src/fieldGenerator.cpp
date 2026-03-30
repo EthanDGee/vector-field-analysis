@@ -18,12 +18,17 @@ namespace FieldGenerator {
 
 namespace {
 
+// All radial field types are mathematically undefined at their center point
+// (radius = 0 causes division by zero). Vectors inside this radius are zeroed
+// out to represent the stagnation point at the singularity.
 constexpr float kSingularityRadius = 1e-6f;
 
 // ---------------------------------------------------------------------------
 // Per-layer base vector at physical coords (px, py, t=time)
 // ---------------------------------------------------------------------------
 
+// Returns a unit tangent vector perpendicular to the radius, producing pure
+// counter-clockwise rotation around the center point.
 Eigen::Vector2f evalVortex(float px, float py, const FieldLayerConfig& layer) {
     const float dx = px - layer.centerX;
     const float dy = py - layer.centerY;
@@ -49,10 +54,13 @@ Eigen::Vector2f evalSource(float px, float py, const FieldLayerConfig& layer) {
     return {dx / radius, dy / radius};
 }
 
+// A sink is a source with the direction reversed -- flow points inward rather than outward.
 Eigen::Vector2f evalSink(float px, float py, const FieldLayerConfig& layer) {
     return -evalSource(px, py, layer);
 }
 
+// Hyperbolic flow: stretches along the x-axis and compresses along y,
+// with two attracting and two repelling sectors separated by the axes.
 Eigen::Vector2f evalSaddle(float px, float py, const FieldLayerConfig& layer) {
     const float dx = px - layer.centerX;
     const float dy = py - layer.centerY;
@@ -63,6 +71,8 @@ Eigen::Vector2f evalSaddle(float px, float py, const FieldLayerConfig& layer) {
     return {dx / radius, -dy / radius};
 }
 
+// A spiral is a convex blend of rotation (vortex) and attraction (sink).
+// sinkBlend=0 is a pure circular vortex; sinkBlend=1 is a pure inward sink.
 Eigen::Vector2f evalSpiral(float px, float py, const FieldLayerConfig& layer) {
     const float sinkWeight = std::clamp(layer.sinkBlend, 0.0f, 1.0f);
     return (1.0f - sinkWeight) * evalVortex(px, py, layer) + sinkWeight * evalSink(px, py, layer);
@@ -74,6 +84,8 @@ Eigen::Vector2f evalNoise(float px, float py, float time, const FieldLayerConfig
     const float scaledY = py * layer.scale;
     const float velocityX =
         stb_perlin_noise3(scaledX + seedOffset, scaledY + seedOffset, time, 0, 0, 0);
+    // Sample y velocity at a spatially offset location so vx and vy are
+    // uncorrelated -- without the offset both components would be identical.
     const float velocityY = stb_perlin_noise3(scaledX + seedOffset + 31.41f,
                                               scaledY + seedOffset + 27.18f, time, 0, 0, 0);
     return {velocityX, velocityY};
@@ -83,6 +95,10 @@ Eigen::Vector2f evalNoise(float px, float py, float time, const FieldLayerConfig
 // Custom exprtk field - compiled once per generateTimeSeries() call
 // ---------------------------------------------------------------------------
 
+// Compiles the user-supplied x/y math expressions once per generateTimeSeries()
+// call. Compilation is expensive, so it cannot happen per cell. The variables
+// x, y, t are bound by reference in the symbol table, so updating them before
+// each eval() call makes the compiled expression evaluate at the new position.
 struct CustomExpressionEvaluator {
     exprtk::symbol_table<float> symbolTable;
     exprtk::expression<float> xExpr;
@@ -159,9 +175,12 @@ FieldTimeSeries generateTimeSeries(const SimulatorConfig& config) {
         std::vector<std::vector<float>>(static_cast<std::size_t>(height),
                                         std::vector<float>(static_cast<std::size_t>(width), 0.0f)));
 
+    // For each time step, sample every layer at every grid cell and sum their
+    // contributions (linear superposition). Strength is the per-layer weight.
     for (int step = 0; step < numSteps; ++step) {
         const float time = static_cast<float>(step) * config.dt;
-        // Decay scalar computed once per step, not per cell
+        // Viscosity damps the field exponentially over time, modelling energy
+        // dissipation. Computed once per step because it is spatially uniform.
         const float decay = std::exp(-config.viscosity * time);
 
         for (int row = 0; row < height; ++row) {

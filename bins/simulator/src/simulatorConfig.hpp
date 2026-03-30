@@ -37,7 +37,11 @@ struct FieldLayerConfig {
 
 struct SimulatorConfig {
     int steps = 100;
+    // Time increment per step. Advances the `t` variable in time-varying
+    // field expressions and the viscosity decay -- not an ODE integration step size.
     float dt = 0.01f;
+    // Controls exponential energy decay: field *= exp(-viscosity * t) per step.
+    // viscosity=0 means no damping; larger values damp the field more aggressively.
     float viscosity = 0.0f;
     std::string output = "field.h5";
     int width = 64;
@@ -46,5 +50,7 @@ struct SimulatorConfig {
     float xMax = 1.0f;
     float yMin = -1.0f;
     float yMax = 1.0f;
+    // Each layer's contribution is added together (linear superposition),
+    // so layer order does not affect the result.
     std::vector<FieldLayerConfig> layers;
 };

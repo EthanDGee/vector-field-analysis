@@ -30,6 +30,8 @@ def load(path):
 
 
 def save(path, vx, vy, attrs):
+    # Output mirrors the load() HDF5 schema so the result file is a drop-in
+    # replacement usable by visualize.py and any other tool that reads .h5 fields.
     with h5py.File(path, "w") as f:
         grp = f.create_group("field")
         grp.create_dataset("vx", data=vx)
@@ -56,9 +58,11 @@ def main():
         print(f"Error reading files: {e}", file=sys.stderr)
         sys.exit(1)
 
+    # Vector field superposition only makes physical sense when both fields share
+    # the same grid geometry; a shape mismatch means the grids are incompatible.
     if vx_a.shape != vx_b.shape:
         print(
-            f"Error: shape mismatch — {args.a} is {vx_a.shape}, {args.b} is {vx_b.shape}",
+            f"Error: shape mismatch - {args.a} is {vx_a.shape}, {args.b} is {vx_b.shape}",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -72,10 +76,13 @@ def main():
         vy_out = vy_a - vy_b
         op_sym = "-"
 
+    # Output inherits spatial metadata (xMin/xMax etc.) from the first operand.
+    # Merging attrs from two potentially different configs could produce an
+    # inconsistent or ambiguous output file.
     save(args.out, vx_out, vy_out, attrs_a)
 
     steps, height, width = vx_out.shape
-    print(f"{args.a} {op_sym} {args.b} → {args.out}  ({width}x{height}, {steps} steps)")
+    print(f"{args.a} {op_sym} {args.b} -> {args.out}  ({width}x{height}, {steps} steps)")
 
 
 if __name__ == "__main__":

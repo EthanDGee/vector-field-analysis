@@ -8,6 +8,8 @@ namespace FieldWriter {
 
 namespace {
 
+// Produces a human-readable label for the "type" HDF5 attribute.
+// Not a general enum serializer -- output is informational only.
 std::string fieldTypeName(FieldType type) {
     switch (type) {
     case FieldType::Vortex:
@@ -39,7 +41,12 @@ void write(const FieldGenerator::FieldTimeSeries& field, const SimulatorConfig& 
     group.createDataSet("vx", field.vx);
     group.createDataSet("vy", field.vy);
 
-    // Summarize field types for the type attribute
+    // Store grid geometry and simulation parameters as HDF5 attributes alongside
+    // the data so the file is self-contained -- readers don't need the config file.
+
+    // Summarize all layer types as a '+'-joined label (e.g. "vortex+noise").
+    // The format is informational; no reader is expected to parse it back
+    // into individual layer types.
     std::string typeLabel;
     for (const auto& fieldConfig : config.layers) {
         if (!typeLabel.empty()) {

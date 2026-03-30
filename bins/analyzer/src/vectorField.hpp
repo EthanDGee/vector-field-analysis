@@ -6,6 +6,8 @@
 
 namespace VectorField {
 
+// Owns a single-step vector field grid and drives the streamline tracing
+// algorithm over it. Row index corresponds to the y-axis, col index to x.
 class FieldGrid {
     const float xMin, xMax, yMin, yMax;
     std::vector<std::vector<Vector::Vec2>> field;
@@ -23,7 +25,9 @@ class FieldGrid {
     std::pair<int, int> neighborInVectorDirection(int row, int col);
     std::pair<int, int> neighborInVectorDirection(std::pair<int, int> coords);
 
-    // Merges end's streamline path into start's, redirecting all field vector references
+    // Merges end's streamline path into start's, redirecting all field vector references.
+    // Null or self-merge arguments are silently ignored -- they represent degenerate
+    // cases (uninitialized cell, vector pointing back to itself) that produce no path.
     void joinStreamlines(const std::shared_ptr<Vector::Streamline>& start,
                          const std::shared_ptr<Vector::Streamline>& end);
 

@@ -112,6 +112,6 @@ mise run run:bin:simulator                      # run with karman_street.toml (d
 
 ## Contents
 
-- **Generation algorithms** - how each field type's vectors are computed
-- **Config reference** - TOML keys and their defaults (see `bins/simulator/README.md`)
-- **Output format** - HDF5 layout consumed by the analyzer
+- [`pipeline.md`](pipeline.md) -- three-stage internal pipeline, data structures, source file map
+- [`config-guide.md`](config-guide.md) -- full config reference, all field types, composition patterns, custom expression tips
+- This file -- field generation algorithms, viscous decay formula, output schema

@@ -16,6 +16,7 @@ FieldTimeSeries read(const std::string& path) {
     group.getDataSet("vx").read(vx3d);
     group.getDataSet("vy").read(vy3d);
 
+    // Guard against malformed files before indexing into the 3-D array below.
     if (vx3d.empty() || vx3d[0].empty() || vx3d[0][0].empty()) {
         throw std::runtime_error("Field dataset is empty in: " + path);
     }

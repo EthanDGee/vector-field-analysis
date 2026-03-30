@@ -10,6 +10,8 @@ float Vec2::magnitude() const {
 
 Vec2 Vec2::unitVector() const {
     const float mag = magnitude();
+    // A zero-magnitude vector has no direction; returning zero avoids
+    // division by zero and prevents NaN from propagating into the field.
     if (mag == 0.0f) {
         return {0.0f, 0.0f};
     }
