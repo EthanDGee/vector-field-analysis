@@ -11,6 +11,8 @@ description = "Install system dependencies (HDF5, cppcheck; clang-format/tidy/ly
 run = """
 if command -v apt-get &>/dev/null; then
     sudo apt-get update -q && sudo apt-get install -y -q libhdf5-dev cppcheck
+elif command -v dnf &>/dev/null; then
+    sudo dnf update -q && sudo dnf install -y -q hdf5 cppcheck
 elif command -v pacman &>/dev/null; then
     sudo pacman -S --needed hdf5 cppcheck
 else
@@ -89,8 +91,8 @@ run = "find bins libs -name '*.cpp' -o -name '*.hpp' | xargs clang-format --dry-
 description = "Fail if any project source file contains non-ASCII characters"
 run = """
 if grep -rn --include='*.cpp' --include='*.hpp' --include='*.toml' --include='*.cmake' --include='*.txt' -P '[\x80-\xFF]' bins libs cmake docs CMakeLists.txt .clang-tidy .clang-format; then
-    echo "Non-ASCII characters found in project files."
-    exit 1
+echo "Non-ASCII characters found in project files."
+exit 1
 fi
 echo "All project files are ASCII-only."
 """
