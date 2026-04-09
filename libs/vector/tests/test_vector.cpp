@@ -8,7 +8,7 @@ using Catch::Matchers::WithinAbs;
 TEST_CASE("Vector magnitude", "[vector]") {
     REQUIRE_THAT(Vector::Vec2(3.0f, 4.0f).magnitude(), WithinAbs(5.0f, 1e-5f));
     REQUIRE_THAT(Vector::Vec2(1.0f, 0.0f).magnitude(), WithinAbs(1.0f, 1e-5f));
-    REQUIRE_THAT(Vector::Vec2(0.0f, 0.0f).magnitude(), WithinAbs(0.0f, 1e-5f));
+    REQUIRE_THAT(Vector::Vec2{}.magnitude(), WithinAbs(0.0f, 1e-5f));
 }
 
 TEST_CASE("Vector unitVector has magnitude 1", "[vector]") {
@@ -44,7 +44,7 @@ TEST_CASE("almostParallel", "[vector]") {
 }
 
 TEST_CASE("Vec2 unitVector for zero vector returns zero vector", "[vector]") {
-    Vector::Vec2 zero(0.0f, 0.0f);
+    Vector::Vec2 zero{};
     auto result = zero.unitVector();
     REQUIRE_THAT(result.x, WithinAbs(0.0f, 1e-5f));
     REQUIRE_THAT(result.y, WithinAbs(0.0f, 1e-5f));
@@ -63,7 +63,7 @@ TEST_CASE("almostParallel threshold boundary", "[vector]") {
 
 TEST_CASE("dotProduct with zero vector", "[vector]") {
     Vector::Vec2 unit(1.0f, 0.0f);
-    Vector::Vec2 zero(0.0f, 0.0f);
+    Vector::Vec2 zero{};
     REQUIRE_THAT(Vector::dotProduct(unit, zero), WithinAbs(0.0f, 1e-5f));
     REQUIRE_THAT(Vector::dotProduct(zero, zero), WithinAbs(0.0f, 1e-5f));
 }
