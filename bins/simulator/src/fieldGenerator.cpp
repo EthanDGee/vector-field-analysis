@@ -31,8 +31,7 @@ struct RadialComponents {
 };
 
 // Returns nullopt when the point is at the singularity (radius < kSingularityRadius).
-std::optional<RadialComponents> computeRadial(float px, float py,
-                                              const FieldLayerConfig& layer) {
+std::optional<RadialComponents> computeRadial(float px, float py, const FieldLayerConfig& layer) {
     const float dx = px - layer.centerX;
     const float dy = py - layer.centerY;
     const float radius = std::sqrt((dx * dx) + (dy * dy));
@@ -50,7 +49,8 @@ std::optional<RadialComponents> computeRadial(float px, float py,
 // counter-clockwise rotation around the center point.
 Vector::Vec2 evalVortex(float px, float py, const FieldLayerConfig& layer) {
     const auto r = computeRadial(px, py, layer);
-    if (!r) return Vector::Vec2{};
+    if (!r)
+        return Vector::Vec2{};
     return {-r->dy / r->radius, r->dx / r->radius};
 }
 
@@ -61,7 +61,8 @@ Vector::Vec2 evalUniform(const FieldLayerConfig& layer) {
 
 Vector::Vec2 evalSource(float px, float py, const FieldLayerConfig& layer) {
     const auto r = computeRadial(px, py, layer);
-    if (!r) return Vector::Vec2{};
+    if (!r)
+        return Vector::Vec2{};
     return {r->dx / r->radius, r->dy / r->radius};
 }
 
@@ -74,7 +75,8 @@ Vector::Vec2 evalSink(float px, float py, const FieldLayerConfig& layer) {
 // with two attracting and two repelling sectors separated by the axes.
 Vector::Vec2 evalSaddle(float px, float py, const FieldLayerConfig& layer) {
     const auto r = computeRadial(px, py, layer);
-    if (!r) return Vector::Vec2{};
+    if (!r)
+        return Vector::Vec2{};
     return {r->dx / r->radius, -r->dy / r->radius};
 }
 
@@ -145,8 +147,8 @@ struct CustomExpressionEvaluator {
 
 Vector::FieldTimeSeries generateTimeSeries(const SimulatorConfig& config) {
     const std::size_t numSteps = static_cast<std::size_t>(config.steps);
-    const std::size_t height   = static_cast<std::size_t>(config.height);
-    const std::size_t width    = static_cast<std::size_t>(config.width);
+    const std::size_t height = static_cast<std::size_t>(config.height);
+    const std::size_t width = static_cast<std::size_t>(config.width);
 
     // Pre-compute physical coordinates for each grid index
     std::vector<float> xCoords(width);
@@ -174,6 +176,12 @@ Vector::FieldTimeSeries generateTimeSeries(const SimulatorConfig& config) {
     output.yMin = config.yMin;
     output.yMax = config.yMax;
     output.steps.assign(numSteps, Vector::FieldSlice(height, std::vector<Vector::Vec2>(width)));
+
+    // Save config info to time series.
+    output.xMin = config.xMin;
+    output.xMax = config.xMax;
+    output.yMin = config.yMin;
+    output.yMax = config.yMax;
 
     // For each time step, sample every layer at every grid cell and sum their
     // contributions (linear superposition). Strength is the per-layer weight.
