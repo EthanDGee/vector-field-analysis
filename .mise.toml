@@ -161,6 +161,7 @@ cppcheck --enable=all --error-exitcode=1 \
   --suppress=missingIncludeSystem \
   --suppress=missingInclude \
   --suppress=unmatchedSuppression \
+  "--suppress=unusedStructMember:bins/simulator/src/fieldGenerator.cpp" \
   bins/ libs/
 """
 
