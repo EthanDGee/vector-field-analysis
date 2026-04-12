@@ -2,15 +2,16 @@
 
 #include <algorithm>
 #include <cmath>
+#include <mutex>
 #include <utility>
 
 namespace VectorField {
 
 std::pair<int, int> FieldGrid::neighborInVectorDirection(int row, int col) {
-    const Vector::Vec2 start = field[static_cast<std::size_t>(row)][static_cast<std::size_t>(col)];
+    const Vector::Vec2 start = field_[static_cast<std::size_t>(row)][static_cast<std::size_t>(col)];
 
-    const float rowSpacing = (yMax - yMin) / static_cast<float>(field.size() - 1);
-    const float colSpacing = (xMax - xMin) / static_cast<float>(field[0].size() - 1);
+    const float rowSpacing = (yMax - yMin) / static_cast<float>(field_.size() - 1);
+    const float colSpacing = (xMax - xMin) / static_cast<float>(field_[0].size() - 1);
 
     // Advance one step in the vector direction, then snap to the nearest grid
     // index. Clamped to valid index bounds so boundary vectors don't reference
@@ -18,11 +19,11 @@ std::pair<int, int> FieldGrid::neighborInVectorDirection(int row, int col) {
     const int nearestRow =
         std::clamp(static_cast<int>(
                        std::round(((static_cast<float>(row) * rowSpacing) + start.y) / rowSpacing)),
-                   0, static_cast<int>(field.size()) - 1);
+                   0, static_cast<int>(field_.size()) - 1);
     const int nearestCol =
         std::clamp(static_cast<int>(
                        std::round(((static_cast<float>(col) * colSpacing) + start.x) / colSpacing)),
-                   0, static_cast<int>(field[0].size()) - 1);
+                   0, static_cast<int>(field_[0].size()) - 1);
 
     return {nearestRow, nearestCol};
 }
@@ -50,6 +51,8 @@ void FieldGrid::joinStreamlines(const std::shared_ptr<Vector::Streamline>& start
 // is unclaimed, or merges with the existing streamline if two paths converge
 // there.
 void FieldGrid::traceStreamlineStep(std::pair<int, int> startCoords) {
+    std::lock_guard<std::mutex> lock(mtx_);
+
     auto& srcStream = streams_[static_cast<std::size_t>(startCoords.first)]
                               [static_cast<std::size_t>(startCoords.second)];
 

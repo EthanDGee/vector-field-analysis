@@ -9,11 +9,11 @@
 namespace openMP {
 void computeTimeStep(VectorField::FieldGrid& field) {
 #ifdef _OPENMP
-    const int rowCount = static_cast<int>(field.field.size());
+    const int rowCount = static_cast<int>(field.rows());
     if (rowCount == 0) {
         return;
     }
-    const int colCount = static_cast<int>(field.field[0].size());
+    const int colCount = static_cast<int>(field.cols());
     if (colCount == 0) {
         return;
     }

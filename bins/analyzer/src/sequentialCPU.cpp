@@ -3,17 +3,17 @@
 namespace sequentialCPU {
 
 void computeTimeStep(VectorField::FieldGrid& timeStep) {
-    const unsigned long numRow = timeStep.field.size();
+    const std::size_t numRow = timeStep.rows();
     if (numRow == 0) {
         return;
     }
-    const unsigned long numCol = timeStep.field[0].size();
+    const std::size_t numCol = timeStep.cols();
     if (numCol == 0) {
         return;
     }
 
-    for (unsigned long row = 0; row < numRow; row++) {
-        for (unsigned long col = 0; col < numCol; col++) {
+    for (std::size_t row = 0; row < numRow; row++) {
+        for (std::size_t col = 0; col < numCol; col++) {
             timeStep.traceStreamlineStep(static_cast<int>(row), static_cast<int>(col));
         }
     }
