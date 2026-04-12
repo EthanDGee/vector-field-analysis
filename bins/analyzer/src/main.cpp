@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -35,23 +36,31 @@ static RunResult runAndCollect(const Vector::FieldTimeSeries& data, Fn computeFn
     return result;
 }
 
-// Canonicalize one step's streamlines for comparison: sort each path
-// lexicographically, then sort the collection. This makes the comparison
+// Canonicalize one step's streamlines for comparison by sorting only the
+// collection of streamlines. Each streamline remains an ordered list of
+// points, so path traversal order is preserved while comparison stays
 // independent of the order in which unique streamlines were encountered
 // during grid iteration.
 static std::vector<std::vector<std::pair<int, int>>> canonicalize(const StepStreamlines& step) {
     auto copy = step;
-    for (auto& path : copy) {
-        std::sort(path.begin(), path.end());
-    }
-    std::sort(copy.begin(), copy.end());
+    std::sort(copy.begin(), copy.end(), [](const auto& a, const auto& b) {
+        if (a.empty() != b.empty()) {
+            return b.empty();
+        }
+        if (a.front() != b.front()) {
+            return a.front() < b.front();
+        }
+        if (a.size() != b.size()) {
+            return a.size() < b.size();
+        }
+        return a.back() < b.back();
+    });
     return copy;
 }
 
 // Crash with a descriptive message if impl's output differs from the reference
 // (sequential). Comparison is canonical so iteration order doesn't matter.
-static void verify(const AllStepStreamlines& reference,
-                   const AllStepStreamlines& other,
+static void verify(const AllStepStreamlines& reference, const AllStepStreamlines& other,
                    const std::string& name) {
     if (reference.size() != other.size()) {
         std::cerr << "Error: " << name << " produced " << other.size() << " step(s) but sequential"
@@ -95,20 +104,17 @@ int main(int argc, char* argv[]) {
         std::cout << "Field: " << inPath << "  " << width << "x" << height << "  " << numSteps
                   << " step(s)\n\n";
 
-        const auto seq = runAndCollect(data, [](VectorField::FieldGrid& g) {
-            sequentialCPU::computeTimeStep(g);
-        });
+        const auto seq = runAndCollect(
+            data, [](VectorField::FieldGrid& g) { sequentialCPU::computeTimeStep(g); });
         std::cout << "sequential          " << seq.ms << " ms\n";
 
-        const auto omp = runAndCollect(data, [](VectorField::FieldGrid& g) {
-            openMP::computeTimeStep(g);
-        });
+        const auto omp =
+            runAndCollect(data, [](VectorField::FieldGrid& g) { openMP::computeTimeStep(g); });
         std::cout << "openmp              " << omp.ms << " ms"
                   << "  (" << seq.ms / omp.ms << "x vs sequential)\n";
 
-        const auto pt = runAndCollect(data, [&](VectorField::FieldGrid& g) {
-            pthreads::computeTimeStep(g, hwThreads);
-        });
+        const auto pt = runAndCollect(
+            data, [&](VectorField::FieldGrid& g) { pthreads::computeTimeStep(g, hwThreads); });
         std::cout << "pthreads (" << hwThreads << " thr)  " << pt.ms << " ms"
                   << "  (" << seq.ms / pt.ms << "x vs sequential)\n";
 
@@ -117,8 +123,8 @@ int main(int argc, char* argv[]) {
         verify(seq.streams, pt.streams, "pthreads");
 
         const std::string outPath = makeOutPath(inPath);
-        StreamWriter::write(outPath, seq.streams, data.xMin, data.xMax, data.yMin, data.yMax,
-                            width, height);
+        StreamWriter::write(outPath, seq.streams, data.xMin, data.xMax, data.yMin, data.yMax, width,
+                            height);
         std::cout << "\nStreamlines written to " << outPath << "\n";
 
     } catch (const std::exception& e) {

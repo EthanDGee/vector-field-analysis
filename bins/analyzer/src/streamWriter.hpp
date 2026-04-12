@@ -23,13 +23,7 @@ using StepStreamlines = std::vector<std::vector<std::pair<int, int>>>;
 //   flat = f["streams/step_0/paths_flat"][:]   # (N, 2)
 //   off  = f["streams/step_0/offsets"][:]      # (S+1,)
 //   path = flat[off[i]:off[i+1]]              # (len, 2) row, col
-void write(const std::string& outPath,
-           const std::vector<StepStreamlines>& allSteps,
-           float xMin,
-           float xMax,
-           float yMin,
-           float yMax,
-           int width,
-           int height);
+void write(const std::string& outPath, const std::vector<StepStreamlines>& allSteps, float xMin,
+           float xMax, float yMin, float yMax, int width, int height);
 
 } // namespace StreamWriter

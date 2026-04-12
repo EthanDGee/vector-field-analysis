@@ -68,19 +68,21 @@ def speed(vx_s, vy_s):
     return np.sqrt(vx_s**2 + vy_s**2)
 
 
-def draw_streams(ax, vx_step, vy_step, attrs):
-    """Overlay streamlines integrated directly from the vector field.
+def draw_loaded_streams(ax, streamlines_step, attrs, shape):
+    """Render pre-computed streamlines loaded from a .streams.h5 file.
 
-    Uses matplotlib's streamplot, which integrates flow paths from seeded
-    start points — producing smooth, properly ordered curves unlike the
-    analyzer's merge-topology paths.
+    Converts each path's (row, col) grid indices to (x, y) coordinates using
+    the field extents stored in attrs, then plots each path as a line.
     """
-    height, width = vx_step.shape
-    x = np.linspace(attrs.get("xMin", -1), attrs.get("xMax", 1), width)
-    y = np.linspace(attrs.get("yMin", -1), attrs.get("yMax", 1), height)
-    spd = np.sqrt(vx_step ** 2 + vy_step ** 2)
-    ax.streamplot(x, y, vx_step, vy_step, color=spd, cmap="cool",
-                  linewidth=1.2, density=1.5, arrowsize=1.2)
+    height, width = shape
+    x_coords = np.linspace(attrs.get("xMin", -1), attrs.get("xMax", 1), width)
+    y_coords = np.linspace(attrs.get("yMin", -1), attrs.get("yMax", 1), height)
+    for path in streamlines_step:
+        if len(path) < 2:
+            continue
+        xs = x_coords[path[:, 1]]  # col index -> x coordinate
+        ys = y_coords[path[:, 0]]  # row index -> y coordinate
+        ax.plot(xs, ys, color="cyan", linewidth=0.8, alpha=0.7)
 
 
 def plot_step(ax, vx, vy, attrs, stride, step, streamlines=None):
@@ -96,7 +98,7 @@ def plot_step(ax, vx, vy, attrs, stride, step, streamlines=None):
     # field magnitudes vary across steps.
     q = ax.quiver(X, Y, vx_s, vy_s, mag, cmap="plasma", pivot="mid", scale=None)
     if streamlines is not None:
-        draw_streams(ax, vx[step], vy[step], attrs)
+        draw_loaded_streams(ax, streamlines[step], attrs, vx[step].shape)
     field_type = attrs.get("type", "unknown")
     total = vx.shape[0]
     ax.set_title(f"{field_type}  |  step {step}/{total - 1}")
