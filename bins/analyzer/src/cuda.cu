@@ -12,6 +12,11 @@ namespace cuda {
       float x;
       float y;
     };
+
+    struct DeviceCoord {
+      int row;
+      int col;
+    }
     
     inline void cudaCheck(cudaError_t err, const char* what) {
       if (err != cudaSuccess) {
@@ -30,7 +35,7 @@ namespace cuda {
                                               float xMax, 
                                               float yMin, 
                                               float yMax,
-                                              DeviceCoord* dest) {
+                                              DeviceCoord* dests) {
       const int idx = blockIdx.x * blockDim.x + threadIdx.x;
       const int total = rows * cols;
 
@@ -81,15 +86,18 @@ namespace cuda {
     for (int row = 0; row < rows; ++row) {
       for (int col = 0; col < cols; ++col) {
         const auto& v = grid.field[static_cast<std::size_t>(row * cols + col)] = DeviceVec2{v.x, v.y};
+        hostField[static_cast<std::size_t>(row * cols + col)] = DeviceVec2{v.x, v.y};
       }
     }
 
     DeviceVec2* dField = nullptr;
     DeviceCoord* dDests = nullptr;
 
-    cudaCheck(cudaMalloc(&dField, sizeof(DeviceVec2) * static_cast<std::size_t>(total)),
+    cudaCheck(cudaMalloc(reinterpret_cast<void**>(&dField), 
+                         sizeof(DeviceVec2) * static_cast<std::size_t>(total)),
               "cudaMalloc(dField)");
-    cudaCheck(cudaMalloc(&dDests, sizeof(DeviceCoord) * static_cast<std::size_t>(total)),
+    cudaCheck(cudaMalloc(reinterpret_cast<void**>(&dDests), 
+                         sizeof(DeviceCoord) * static_cast<std::size_t>(total)),
               "cudaMalloc(dDests)");
 
     cudaCheck(cudaMemcpy(dField,
@@ -109,7 +117,7 @@ namespace cuda {
     cudaCheck(cudaGetLastError(), "kernel launch");
     cudaCheck(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
 
-    std::vector<DeviceCoord> hostDests(static_cast<std::size_t(total));
+    std::vector<DeviceCoord> hostDests(static_cast<std::size_t>(total));
     cudaCheck(cudaMemcpy(hostDests.data(),
                          dDests,
                          sizeof(DeviceCoord) * static_cast<std::size_t>(total),
@@ -123,7 +131,7 @@ namespace cuda {
     // so that streamline creation/merging semantics are consistent with host implementation
     for (int row = 0; row < rows; ++row) {
       for (int col = 0; col < cols; ++col) {
-        const auto& dest = hostDests[static_cast<std::size_t(row * cols + col)];
+        const auto& dest = hostDests[static_cast<std::size_t>(row * cols + col)];
         grid.traceStreamlineStepTo(row, col, dest.row, dest.col);
       }
     }
