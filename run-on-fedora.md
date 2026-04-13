@@ -581,4 +581,32 @@ CMake Deprecation Warning at build/_deps/eigen-src/CMakeLists.txt:2 (cmake_minim
 -- Configuring done (25.2s)
 -- Generating done (0.1s)
 -- Build files have been written to: /home/rylei/Spring26/CS6030/Final/vector-field-analysis/build
-(base) rylei@fedora:~/Spring26/CS6030/Final/vector-field-analysis$ 
+(base) rylei@fedora:~/Spring26/CS6030/Final/vector-field-analysis$
+
+# working build path:
+```
+rm -rf build
+cmake -S . -B build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+cmake --build build -j
+ctest --test-dir build --output-on-failure
+```
+
+# clean options:
+```
+# option 1: keep using mise cmake, but always include the policy flag
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+
+# option 2: bypass mise cmake and use Fedora's system cmake
+/usr/bin/cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+```
+
+
+```
+```
+```
+```
+```
+```
