@@ -53,3 +53,4 @@ build-sanitize/
 # IDE / tooling
 .cache/
 compile_commands.json
+.idea/
