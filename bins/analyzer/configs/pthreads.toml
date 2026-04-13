@@ -1,0 +1,9 @@
+# pthreads.toml
+# Shared memory analysis using pthreads.
+#
+# Run: analyzer bins/analyzer/configs/pthreads.toml
+
+[analyzer]
+input   = "field.h5"
+solver  = "pthreads"
+threads = 0          # 0 = hardware_concurrency

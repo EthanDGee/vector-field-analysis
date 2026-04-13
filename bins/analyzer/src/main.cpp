@@ -99,6 +99,7 @@ static void printHelp() {
               << "See bins/analyzer/docs/config-guide.md for all config keys.\n"
               << "\n[analyzer] keys:\n"
               << "  input   = \"field.h5\"   HDF5 field file to read\n"
+              << "  output  = \"\"           output path (default: <input>.streams.h5)\n"
               << "  solver  = \"all\"        sequential | openmp | pthreads | mpi | all\n"
               << "  threads = 0            thread count for pthreads (0 = hardware_concurrency)\n"
               << "\nFor MPI: mpirun -n N analyzer <config.toml>  with solver = \"mpi\"\n";
@@ -113,8 +114,8 @@ static unsigned int resolveThreadCount(unsigned int requested) {
 }
 
 static void runAll(const Vector::FieldTimeSeries& field, unsigned int threadCount, int mpiRank,
-                   int mpiSize, const std::string& inPath) {
-    // Non-MPI solvers: only rank 0 needs their results; skip on other ranks.
+                   int mpiSize, const std::string& outPath) {
+    // Non-MPI solvers run only on rank 0.
     RunResult seqResult{};
     RunResult ompResult{};
     RunResult ptResult{};
@@ -126,41 +127,54 @@ static void runAll(const Vector::FieldTimeSeries& field, unsigned int threadCoun
         ompResult = runSolver(*omp, field);
         ptResult = runSolver(*pt, field);
     }
+
     // MPI solver: all ranks must participate (collective calls inside).
-    auto mpi = makeSolver("mpi", threadCount);
-    const auto mpiResult = runSolver(*mpi, field);
+    // Skip when running single-rank — it falls back to sequential and adds no signal.
+    RunResult mpiResult{};
+    const bool runMpi = mpiSize > 1;
+    if (runMpi) {
+        auto mpi = makeSolver("mpi", threadCount);
+        mpiResult = runSolver(*mpi, field);
+    }
 
     if (mpiRank == 0) {
-        const std::string_view seqLabel = "sequential";
-        const std::string_view ompLabel = "openmp";
+        const std::string seqLabel = "sequential";
+        const std::string ompLabel = "openmp (" + std::to_string(threadCount) + " thr)";
         const std::string ptLabel = "pthreads (" + std::to_string(threadCount) + " thr)";
         const std::string mpiLabel = "mpi (" + std::to_string(mpiSize) + " rank(s))";
-        const int labelWidth = static_cast<int>(std::max({seqLabel.size(), ompLabel.size(),
-                                                          ptLabel.size(), mpiLabel.size()})) +
-                               2;
+
+        int labelWidth = static_cast<int>(std::max({seqLabel.size(), ompLabel.size(),
+                                                    ptLabel.size(), mpiLabel.size()})) +
+                         2;
         std::cout << std::left << std::setw(labelWidth) << seqLabel << seqResult.ms << " ms\n"
                   << std::setw(labelWidth) << ompLabel << ompResult.ms << " ms"
                   << "  (" << (ompResult.ms > 0 ? seqResult.ms / ompResult.ms : 0.0)
                   << "x vs sequential)\n"
                   << std::setw(labelWidth) << ptLabel << ptResult.ms << " ms"
                   << "  (" << (ptResult.ms > 0 ? seqResult.ms / ptResult.ms : 0.0)
-                  << "x vs sequential)\n"
-                  << std::setw(labelWidth) << mpiLabel << mpiResult.ms << " ms"
-                  << "  (" << (mpiResult.ms > 0 ? seqResult.ms / mpiResult.ms : 0.0)
                   << "x vs sequential)\n";
+        if (runMpi) {
+            std::cout << std::setw(labelWidth) << mpiLabel << mpiResult.ms << " ms"
+                      << "  (" << (mpiResult.ms > 0 ? seqResult.ms / mpiResult.ms : 0.0)
+                      << "x vs sequential)\n";
+        } else {
+            std::cout << "(mpi skipped — rerun with mpirun -n N for a multi-rank comparison)\n";
+        }
 
         verify(seqResult.streams, ompResult.streams, "openmp");
         verify(seqResult.streams, ptResult.streams, "pthreads");
-        verify(seqResult.streams, mpiResult.streams, "mpi");
+        if (runMpi) {
+            verify(seqResult.streams, mpiResult.streams, "mpi");
+        }
 
-        const std::string outPath = makeOutPath(inPath);
         StreamWriter::write(outPath, seqResult.streams, field.bounds, field.gridSize());
         std::cout << "\nStreamlines written to " << outPath << "\n";
     }
 }
 
 static void runOne(const std::string& solverName, const Vector::FieldTimeSeries& field,
-                   unsigned int threadCount, int mpiRank, int mpiSize, const std::string& inPath) {
+                   unsigned int threadCount, int mpiRank, int mpiSize,
+                   const std::string& outPath) {
     RunResult result{};
     if (solverName == "mpi") {
         auto solver = makeSolver(solverName, threadCount);
@@ -169,6 +183,7 @@ static void runOne(const std::string& solverName, const Vector::FieldTimeSeries&
         auto solver = makeSolver(solverName, threadCount);
         result = runSolver(*solver, field);
     } else {
+        // Non-zero ranks: completed collective role in runSolver(); only rank 0 writes output.
         return;
     }
 
@@ -181,7 +196,6 @@ static void runOne(const std::string& solverName, const Vector::FieldTimeSeries&
         }
         std::cout << label << "  " << result.ms << " ms\n";
 
-        const std::string outPath = makeOutPath(inPath);
         StreamWriter::write(outPath, result.streams, field.bounds, field.gridSize());
         std::cout << "\nStreamlines written to " << outPath << "\n";
     }
@@ -221,11 +235,13 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    int exitCode = 0;
     try {
         const AnalyzerConfig config = AnalyzerConfigParser::parseFile(argv[1]);
         const unsigned int threadCount = resolveThreadCount(config.threadCount);
         const Vector::FieldTimeSeries field = FieldReader::read(config.inputPath);
+        // Use the TOML output path if set; otherwise derive from the input field path.
+        const std::string outPath =
+            config.outputPath.empty() ? makeOutPath(config.inputPath) : config.outputPath;
 
         if (field.steps.empty()) {
             throw std::runtime_error("field file contains no time steps: " + config.inputPath);
@@ -243,19 +259,25 @@ int main(int argc, char* argv[]) {
         }
 
         if (config.solver == "all") {
-            runAll(field, threadCount, mpiRank, mpiSize, config.inputPath);
+            runAll(field, threadCount, mpiRank, mpiSize, outPath);
         } else {
-            runOne(config.solver, field, threadCount, mpiRank, mpiSize, config.inputPath);
+            runOne(config.solver, field, threadCount, mpiRank, mpiSize, outPath);
         }
     } catch (const std::exception& e) {
         if (mpiRank == 0) {
             std::cerr << "Error: " << e.what() << "\n";
         }
-        exitCode = 1;
+        // MPI_Abort terminates all ranks immediately. If we only set an exit code and fall
+        // through to MPI_Finalize, any rank that threw before reaching a collective will
+        // cause the other ranks to hang waiting for that collective to complete.
+#ifdef USE_MPI
+        MPI_Abort(MPI_COMM_WORLD, 1);
+#endif
+        return 1;
     }
 
 #ifdef USE_MPI
     MPI_Finalize();
 #endif
-    return exitCode;
+    return 0;
 }

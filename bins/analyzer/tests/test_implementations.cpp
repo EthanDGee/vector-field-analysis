@@ -102,8 +102,10 @@ TEST_CASE("OpenMP::computeTimeStep handles empty grid", "[impl][openmp]") {
 // MpiCPU
 // ---------------------------------------------------------------------------
 
-// MpiCPU falls back to SequentialCPU when compiled without USE_MPI or run with
-// a single rank.  These tests exercise the single-rank / no-MPI path.
+// NOTE: These tests exercise only the no-MPI-init fallback path (MPI_Initialized()
+// returns 0, so MpiCPU delegates to SequentialCPU). The actual gather/gatherv code
+// in mpiCPU.cpp requires >1 MPI rank and is not covered here.
+// To exercise it: mpirun -n 2 ./build/bins/analyzer/tests/analyzer_tests [mpi]
 
 TEST_CASE("MpiCPU::computeTimeStep completes on uniform field", "[impl][mpi]") {
     auto grid = makeGrid();
@@ -206,9 +208,9 @@ TEST_CASE("all impls agree on neighbor directions for uniform field", "[impl][co
     // the right (clamped at the edge).
     for (int r = 0; r < rows; r++) {
         for (int c = 0; c < cols; c++) {
-            auto [nr, nc] = ref.downstreamCell(r, c);
-            REQUIRE(nr == r);
-            REQUIRE(nc == std::min(c + 1, cols - 1));
+            auto cell = ref.downstreamCell(r, c);
+            REQUIRE(cell.row == r);
+            REQUIRE(cell.col == std::min(c + 1, cols - 1));
         }
     }
 }

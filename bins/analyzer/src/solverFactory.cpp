@@ -19,7 +19,7 @@ std::unique_ptr<StreamlineSolver> makeSolver(std::string_view name, unsigned int
         return std::make_unique<SequentialCPU>();
     }
     if (name == "openmp") {
-        return std::make_unique<OpenMP>();
+        return std::make_unique<OpenMP>(threadCount);
     }
     if (name == "pthreads") {
         return std::make_unique<Pthreads>(threadCount);

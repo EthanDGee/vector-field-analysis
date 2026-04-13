@@ -14,6 +14,6 @@ Link against the `vector` CMake target to use these types in any binary or libra
 ## Tasks
 
 ```sh
-mise run build:lib:vector   # build
-mise run test:lib:vector    # test
+mise run build   # build
+mise run test:vector    # test
 ```

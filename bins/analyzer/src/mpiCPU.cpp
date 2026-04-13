@@ -4,6 +4,7 @@
 
 #ifdef USE_MPI
 #include <algorithm>
+#include <cassert>
 #include <cstdint>
 #include <iostream>
 #include <limits>
@@ -55,6 +56,8 @@ void MpiCPU::computeTimeStep(VectorField::FieldGrid& grid) {
     // downstreamCell is const and reads no mutable state -- concurrent
     // calls across disjoint row ranges are race-free.
     // Guard size_t overflow before computing localCount.
+    // colCount == 0 → localCount == 0, no overflow possible; guard avoids division by zero
+    // in the overflow formula below.
     if (colCount > 0 &&
         static_cast<std::size_t>(localRows) > std::numeric_limits<std::size_t>::max() / kTupleSize /
                                                   static_cast<std::size_t>(colCount)) {
@@ -95,6 +98,8 @@ void MpiCPU::computeTimeStep(VectorField::FieldGrid& grid) {
     // Build displacements and receive buffer.
     // Root allocates real buffers; non-root gets 1-element dummies so .data()
     // is non-null for MPI_Gatherv (same portability reason as above).
+    // displs[0] = 0 intentionally (rank 0's data starts at offset 0); the loop below
+    // starts at i=1 and fills the remaining entries from recvCounts.
     std::vector<int> displs(rank == 0 ? static_cast<std::size_t>(size) : 1, 0);
     std::vector<int> allData(1);
     if (rank == 0) {
@@ -124,6 +129,7 @@ void MpiCPU::computeTimeStep(VectorField::FieldGrid& grid) {
     // traceStreamlineStep writes to streams_ and is not thread-safe, so this must be
     // sequential.  Only rank 0 has the full allData, so only rank 0 does this pass.
     if (rank == 0) {
+        assert(allData.size() % kTupleSize == 0);
         const std::size_t totalPairs = allData.size() / kTupleSize;
         for (std::size_t i = 0; i < totalPairs; i++) {
             const std::size_t base = i * kTupleSize;

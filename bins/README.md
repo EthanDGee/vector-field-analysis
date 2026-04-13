@@ -10,6 +10,6 @@ Each binary has its own source, docs, tests, and build target.
 ## Running
 
 ```sh
-mise run run:bin:simulator   # generate field.h5
-mise run run:bin:analyzer    # read field.h5 and trace streamlines
+mise run run:simulator   # generate field.h5
+mise run run:analyzer    # read field.h5 and trace streamlines
 ```

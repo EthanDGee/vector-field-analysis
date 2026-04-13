@@ -8,8 +8,12 @@
 
 #include <vector>
 
+OpenMP::OpenMP(unsigned int threadCount) : threadCount_(threadCount) {}
+
 void OpenMP::computeTimeStep(VectorField::FieldGrid& grid) {
 #ifdef _OPENMP
+    omp_set_num_threads(static_cast<int>(threadCount_));
+
     const int rowCount = static_cast<int>(grid.rows());
     if (rowCount == 0) {
         return;

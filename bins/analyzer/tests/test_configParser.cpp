@@ -38,8 +38,15 @@ TEST_CASE("parseFile returns defaults when [analyzer] table is absent", "[config
     const auto cfg = AnalyzerConfigParser::parseFile(tmp.path);
 
     REQUIRE(cfg.inputPath == "field.h5");
+    REQUIRE(cfg.outputPath.empty());
     REQUIRE(cfg.solver == "all");
     REQUIRE(cfg.threadCount == 0);
+}
+
+TEST_CASE("parseFile reads output path from [analyzer]", "[config]") {
+    TmpFile tmp("[analyzer]\noutput = \"output/streams_a100.h5\"\n");
+    const auto cfg = AnalyzerConfigParser::parseFile(tmp.path);
+    REQUIRE(cfg.outputPath == "output/streams_a100.h5");
 }
 
 TEST_CASE("parseFile reads input, solver, and threads from [analyzer]", "[config]") {

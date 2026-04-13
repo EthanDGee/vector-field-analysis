@@ -18,9 +18,9 @@ automatically by `FetchContent` at configure time -- no manual installation need
 
 ```sh
 mise run build                    # configure + build everything (Release)
-mise run build:lib:vector         # vector library only
-mise run build:bin:simulator      # simulator only
-mise run build:bin:analyzer       # analyzer only
+mise run build         # vector library only
+mise run build:simulator      # simulator only
+mise run build:analyzer       # analyzer only
 ```
 
 Build artifacts go in `build/`. Two additional build directories are created for
@@ -42,9 +42,9 @@ mise run clean     # remove all build directories
 
 ```sh
 mise run test                     # run all tests (Release build)
-mise run test:lib:vector          # vector library tests only
-mise run test:bin:simulator       # simulator tests only
-mise run test:bin:analyzer        # analyzer tests only
+mise run test:vector          # vector library tests only
+mise run test:simulator       # simulator tests only
+mise run test:analyzer        # analyzer tests only
 ```
 
 Tests are written with [Catch2](https://github.com/catchorg/Catch2) v3.
@@ -108,13 +108,13 @@ mise run links            # check for broken links in all markdown files (lychee
 ## Running the Simulator
 
 ```sh
-mise run run:bin:simulator        # build and run with karman_street.toml (writes field.h5)
+mise run run:simulator        # build and run with karman_street.toml (writes field.h5)
 ./build/bins/simulator/simulator bins/simulator/configs/vortex.toml
 ```
 
 ```sh
 mise run visualize                # animate field.h5
-mise run run:bin:analyzer         # build and run the analyzer (reads field.h5)
+mise run run:analyzer         # build and run the analyzer (reads field.h5)
 ```
 
 ---

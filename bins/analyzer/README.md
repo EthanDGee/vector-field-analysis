@@ -6,7 +6,7 @@ Reads a time-series vector field from HDF5 and traces streamlines through each s
 
 ```sh
 analyzer field.h5            # run with a specific file
-mise run run:bin:analyzer    # build and run (reads field.h5 in the working directory)
+mise run run:analyzer    # build and run (reads field.h5 in the working directory)
 ```
 
 ## What It Does
@@ -23,7 +23,7 @@ mise run run:bin:analyzer    # build and run (reads field.h5 in the working dire
 ## Tasks
 
 ```sh
-mise run build:bin:analyzer   # build
-mise run test:bin:analyzer    # test
-mise run run:bin:analyzer     # run (reads field.h5)
+mise run build:analyzer   # build
+mise run test:analyzer    # test
+mise run run:analyzer     # run (reads field.h5)
 ```

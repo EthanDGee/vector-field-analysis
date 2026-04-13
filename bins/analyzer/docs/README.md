@@ -16,7 +16,7 @@ sequential merge pass.
 simulator bins/simulator/configs/vortex.toml
 
 # Benchmark all implementations
-analyzer bins/analyzer/configs/default.toml
+analyzer bins/analyzer/configs/all.toml
 
 # Run a single implementation
 analyzer bins/analyzer/configs/mpi.toml

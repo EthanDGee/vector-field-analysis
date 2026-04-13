@@ -16,12 +16,12 @@ source "$SCRIPT_DIR/../validate.sh"
 validate_or_die \
   _check_account _check_partition _check_gpu _check_time _check_ntasks \
   _check_cuda_arch _check_cuda_module \
-  _check_job_name _check_job_bin _check_job_src _check_job_input _check_job_output
+  _check_job_name _check_job_bin _check_job_input _check_job_output
 
 GPU_LABEL="${CHPC_GPU%%:*}"
 SM_ARCH="$CUDA_ARCH"
 LOG_DIR="$PROJECT_DIR/logs/$GPU_LABEL"
-bin="$PROJECT_DIR/${JOB_BIN}_${SM_ARCH}"
+bin="$PROJECT_DIR/${JOB_BIN}_run"
 cmake_bin="$PROJECT_DIR/build/bins/$JOB_BIN/$JOB_BIN"
 
 cd "$PROJECT_DIR"
@@ -37,7 +37,7 @@ if [[ ! -d "$PROJECT_DIR/build" ]]; then
 fi
 cmake --build "$PROJECT_DIR/build" --target "$JOB_BIN" -- -j"$(nproc)"
 cp -f "$cmake_bin" "$bin"
-echo "  staged $bin"
+echo "  staged ${JOB_BIN}_run"
 
 # --- Submit ---
 echo ""

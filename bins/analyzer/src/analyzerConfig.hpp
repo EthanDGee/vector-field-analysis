@@ -12,6 +12,8 @@ inline constexpr std::array<std::string_view, 5> kValidSolvers = {"sequential", 
 
 struct AnalyzerConfig {
     std::string inputPath = "field.h5";
+    // Empty means derive from inputPath: strip .h5, append .streams.h5.
+    std::string outputPath;
     // Must be one of kValidSolvers.
     std::string solver = "all";
     // Thread count for the Pthreads solver.  0 = hardware_concurrency.

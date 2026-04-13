@@ -10,5 +10,5 @@ Catch2 tests for the `analyzer` binary.
 ## Running
 
 ```sh
-mise run test:bin:analyzer
+mise run test:analyzer
 ```

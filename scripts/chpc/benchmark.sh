@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Submit benchmark jobs across all configured GPU node types.
+# Submit benchmark jobs across all configured node types.
 # Run from anywhere on a CHPC login node -- no interactive session needed.
 # Configure via .env at the project root.
 #
 # What it does:
-#   1. Compiles a separate binary for each distinct SM arch (login node, no GPU required)
-#   2. Submits one sbatch job per GPU config (via job.sh)
-#   3. Each job runs JOB_BIN, saving stdout/stderr to logs/
+#   1. Builds JOB_BIN via CMake on the login node
+#   2. Stages the binary as ${JOB_BIN}_run in the project root
+#   3. Submits one sbatch job per config (via job.sh)
+#   4. Each job injects a per-label output path into a temp TOML and runs JOB_BIN
 #
 # Logs:  logs/<gpu_label>/stdout.log  and  logs/<gpu_label>/stderr.log
 # Output files: derived from JOB_OUTPUT with _<gpu_label> inserted before extension
@@ -24,8 +25,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$SCRIPT_DIR/../validate.sh"
 
-validate_or_die _check_account _check_partition _check_time _check_cuda_module \
-  _check_job_name _check_job_bin _check_job_src _check_job_input _check_job_output
+validate_or_die _check_account _check_partition _check_time _check_ntasks _check_cuda_module \
+  _check_job_name _check_job_bin _check_job_input _check_job_output
 
 BATCH_SCRIPT="$SCRIPT_DIR/job.sh"
 LOG_DIR="$PROJECT_DIR/logs"
@@ -85,20 +86,12 @@ if [[ ! -d "$PROJECT_DIR/build" ]]; then
 fi
 cmake --build "$PROJECT_DIR/build" --target "$JOB_BIN" -- -j"$(nproc)"
 
-# --- Stage one binary per unique arch label ---
-# The arch suffix is used as an identifier by job.sh; each config gets its own copy.
-echo "==> Staging binaries"
-declare -A staged
-
-for config in "${CONFIGS[@]}"; do
-  read -r label gres partition account arch <<< "$config"
-  if [[ -z "${staged[$arch]+x}" ]]; then
-    job_bin="$PROJECT_DIR/${JOB_BIN}_$arch"
-    cp -f "$cmake_bin" "$job_bin"
-    echo "  $arch: staged $JOB_BIN"
-    staged[$arch]=1
-  fi
-done
+# --- Stage binary ---
+# A single copy is sufficient; the MPI analyzer binary is arch-independent.
+# job.sh references it as ${JOB_BIN}_run.
+echo "==> Staging binary"
+cp -f "$cmake_bin" "$PROJECT_DIR/${JOB_BIN}_run"
+echo "  staged ${JOB_BIN}_run"
 
 # --- Submit one job per GPU config ---
 echo ""
@@ -118,7 +111,7 @@ for config in "${CONFIGS[@]}"; do
     "${account_flag[@]}" \
     --gres="$gres" \
     --nodes=1 \
-    --ntasks=1 \
+    --ntasks="$CHPC_NTASKS" \
     --time="$CHPC_TIME" \
     --job-name="${JOB_NAME}_$label" \
     --output="$LOG_DIR/$label/stdout.log" \

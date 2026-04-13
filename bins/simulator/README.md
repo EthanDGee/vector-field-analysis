@@ -6,7 +6,7 @@ Generates procedural vector fields from a TOML config file and writes them to HD
 
 ```sh
 simulator <config.toml>         # run with a config file
-mise run run:bin:simulator      # build and run (uses karman_street.toml by default)
+mise run run:simulator      # build and run (uses karman_street.toml by default)
 ```
 
 To visualize the output:
@@ -116,9 +116,9 @@ field/               (group)
 ## Tasks
 
 ```sh
-mise run build:bin:simulator   # build
-mise run test:bin:simulator    # test
-mise run run:bin:simulator     # run karman_street.toml (writes field.h5)
+mise run build:simulator   # build
+mise run test:simulator    # test
+mise run run:simulator     # run karman_street.toml (writes field.h5)
 ```
 
 ## Dependencies

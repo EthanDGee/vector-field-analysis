@@ -49,8 +49,8 @@ mise run test    # run all tests
 | `mise run test:coverage` | Run tests and generate coverage report |
 | `mise run links` | Check for broken links in markdown files |
 | `mise run ci` | Full pipeline -- mirrors all GitHub Actions jobs |
-| `mise run run:bin:simulator` | Build and run the simulator with `karman_street.toml` (writes `field.h5`) |
-| `mise run run:bin:analyzer` | Build and run the analyzer (reads `field.h5`) |
+| `mise run run:simulator` | Build and run the simulator with `karman_street.toml` (writes `field.h5`) |
+| `mise run run:analyzer` | Build and run the analyzer (reads `field.h5`) |
 | `mise run visualize` | Animate `field.h5` as a quiver plot |
 | `mise run clean` | Remove build artifacts |
 
@@ -58,12 +58,12 @@ Individual targets:
 
 | Task | Description |
 |---|---|
-| `mise run build:lib:vector` | Build vector library only |
-| `mise run build:bin:analyzer` | Build analyzer only |
-| `mise run build:bin:simulator` | Build simulator only |
-| `mise run test:lib:vector` | Test vector library only |
-| `mise run test:bin:analyzer` | Test analyzer only |
-| `mise run test:bin:simulator` | Test simulator only |
+| `mise run build` | Build vector library only |
+| `mise run build:analyzer` | Build analyzer only |
+| `mise run build:simulator` | Build simulator only |
+| `mise run test:vector` | Test vector library only |
+| `mise run test:analyzer` | Test analyzer only |
+| `mise run test:simulator` | Test simulator only |
 
 ## Dependencies
 

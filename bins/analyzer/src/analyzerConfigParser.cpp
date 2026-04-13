@@ -19,8 +19,15 @@ void validateSolver(const std::string& name) {
                     [&name](std::string_view s) { return name == s; })) {
         return;
     }
-    throw std::runtime_error("Unknown solver: \"" + name +
-                             "\". Must be sequential, openmp, pthreads, mpi, or all.");
+    // Build the valid-names list from kValidSolvers so it stays in sync automatically.
+    std::string valid;
+    for (const auto& s : kValidSolvers) {
+        if (!valid.empty()) {
+            valid += ", ";
+        }
+        valid += std::string(s);
+    }
+    throw std::runtime_error("Unknown solver: \"" + name + "\". Must be one of: " + valid + ".");
 }
 
 } // namespace
@@ -38,6 +45,9 @@ AnalyzerConfig parseFile(const std::string& path) {
 
     if (const auto v = (*analyzer)["input"].value<std::string>()) {
         config.inputPath = *v;
+    }
+    if (const auto v = (*analyzer)["output"].value<std::string>()) {
+        config.outputPath = *v;
     }
     if (const auto v = (*analyzer)["solver"].value<std::string>()) {
         validateSolver(*v);

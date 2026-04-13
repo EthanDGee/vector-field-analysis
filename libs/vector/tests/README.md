@@ -10,5 +10,5 @@ Catch2 tests for the `vector` library.
 ## Running
 
 ```sh
-mise run test:lib:vector
+mise run test:vector
 ```

@@ -1,0 +1,8 @@
+# openmp.toml
+# Shared memory analysis using OpenMP.
+#
+# Run: analyzer bins/analyzer/configs/openmp.toml
+
+[analyzer]
+input  = "field.h5"
+solver = "openmp"

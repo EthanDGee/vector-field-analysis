@@ -1,7 +1,7 @@
-# default.toml
+# all.toml
 # Benchmark all implementations against the generated field.
 #
-# Run: analyzer bins/analyzer/configs/default.toml
+# Run: analyzer bins/analyzer/configs/all.toml
 
 [analyzer]
 input   = "field.h5"
