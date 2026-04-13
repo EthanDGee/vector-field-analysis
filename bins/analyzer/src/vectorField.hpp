@@ -13,9 +13,11 @@ namespace VectorField {
 // algorithm over it. Row index corresponds to the y-axis, col index to x.
 class FieldGrid {
     const float xMin, xMax, yMin, yMax;
-    std::vector<std::vector<std::shared_ptr<Vector::Streamline>> streams_;
+    std::vector<std::vector<std::shared_ptr<Vector::Streamline>>> streams_;
 
   public:
+    std::vector<std::vector<Vector::Vec2>> field;
+
     FieldGrid(float xMin, float xMax, float yMin, float yMax,
               std::vector<std::vector<Vector::Vec2>> field)
         : xMin(xMin),
@@ -23,7 +25,7 @@ class FieldGrid {
           yMin(yMin),
           yMax(yMax),
           field(std::move(field)) {
-            const std::size_t rows = this->field[0].size() : 0;
+            const std::size_t rows = this->field.size();
             const std::size_t cols = rows > 0 ? this->field[0].size() : 0;
             streams_.assign(rows, std::vector<std::shared_ptr<Vector::Streamline>>(cols, nullptr));
           }
@@ -47,6 +49,9 @@ class FieldGrid {
 
     // Follows the vector at startCoords one step and connects it to the destination streamline
     void traceStreamlineStep(std::pair<int, int> startCoords);
+    void traceStreamlineStep(int row, int col) {
+        traceStreamlineStep(std::make_pair(row, col));
+        }
 
     void traceStreamlineStepTo(std::pair<int, int> startCoords,
                                std::pair<int, int> destCoords);
