@@ -16,6 +16,7 @@
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <numeric>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -102,10 +103,9 @@ static std::string formatBytes(std::uintmax_t bytes) {
 
 static void writeAndReport(const std::string& outPath, const AllStepStreamlines& streams,
                            const Vector::FieldBounds& bounds, const Vector::GridSize& grid) {
-    std::size_t total = 0;
-    for (const auto& step : streams) {
-        total += step.size();
-    }
+    const std::size_t total =
+        std::accumulate(streams.begin(), streams.end(), std::size_t{0},
+                        [](std::size_t acc, const auto& step) { return acc + step.size(); });
     const std::size_t numSteps = streams.size();
     const double avgPerStep =
         numSteps > 0 ? static_cast<double>(total) / static_cast<double>(numSteps) : 0.0;
