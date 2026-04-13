@@ -33,6 +33,13 @@ class FieldGrid {
 
     // Follows the vector at startCoords one step and connects it to the destination streamline
     void traceStreamlineStep(std::pair<int, int> startCoords);
+
+    void traceStreamlineStepTo(std::pair<int, int> startCoords,
+                               std::pair<int, int> destCoords);
+    void traceStreamlineStepTo(int row, int col, int destRow, int destCol) {
+      traceStreamlineStepTo(std::make_pair(row, col), 
+                            std::make_pair(destRow, destCol));
+    }
 };
 
 } // namespace VectorField
