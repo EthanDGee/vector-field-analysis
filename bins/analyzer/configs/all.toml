@@ -6,4 +6,3 @@
 [analyzer]
 input   = "field.h5"
 solver  = "all"
-threads = 0          # 0 = hardware_concurrency

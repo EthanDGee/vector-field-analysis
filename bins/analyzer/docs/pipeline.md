@@ -99,7 +99,8 @@ Single loop over all `(row, col)` pairs; both passes merged into one sequential 
 
 ### `OpenMP`
 
-- Pass 1: `#pragma omp parallel for collapse(2)` over all cells.
+- Accepts `threadCount` in its constructor; calls `omp_set_num_threads(threadCount)` before Pass 1 so the thread count matches pthreads exactly.
+- Pass 1: `#pragma omp parallel for schedule(static) collapse(2)` over all cells.
 - Pass 2: sequential.
 
 ### `Pthreads`
@@ -114,6 +115,24 @@ Single loop over all `(row, col)` pairs; both passes merged into one sequential 
 - `MPI_Gatherv` collects all pairs on rank 0.
 - Pass 2: sequential on rank 0 only.
 - Single-rank run falls back to `SequentialCPU` (no communication overhead).
+
+---
+
+## `all` Mode: Fair Comparison
+
+When `solver = "all"`, `main.cpp` runs every implementation and prints timings side-by-side.
+To keep the comparison apples-to-apples:
+
+- **Thread adaptation** — if MPI is active (`mpiSize > 1`), `threadCount` is set to `mpiSize`
+  before any solver runs. This ensures openmp, pthreads, and mpi all use the same number of
+  workers regardless of what the config's `threads` key says.
+
+- **MPI skip** — if the binary is invoked without `mpirun` (single-rank), the MPI solver is
+  skipped and a hint is printed. A single-rank MPI run falls back internally to sequential,
+  so including it would just duplicate the sequential result and mislead.
+
+- **`mise run run:analyzer`** launches with `mpirun -n $MPI_RANKS` (see `.env.example`) so MPI
+  always participates with a consistent rank count.
 
 ---
 

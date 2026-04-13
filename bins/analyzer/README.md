@@ -5,8 +5,10 @@ Reads a time-series vector field from HDF5 and traces streamlines through each s
 ## Usage
 
 ```sh
-analyzer field.h5            # run with a specific file
-mise run run:analyzer    # build and run (reads field.h5 in the working directory)
+analyzer bins/analyzer/configs/all.toml        # benchmark all impls
+analyzer bins/analyzer/configs/sequential.toml # single-threaded reference
+mpirun -n 4 analyzer bins/analyzer/configs/mpi.toml  # MPI solver, 4 ranks
+mise run run:analyzer                          # build + simulate + benchmark (recommended)
 ```
 
 ## What It Does
@@ -23,7 +25,8 @@ mise run run:analyzer    # build and run (reads field.h5 in the working director
 ## Tasks
 
 ```sh
-mise run build:analyzer   # build
-mise run test:analyzer    # test
-mise run run:analyzer     # run (reads field.h5)
+mise run build:analyzer       # build
+mise run test:analyzer        # test
+mise run run:analyzer         # run simulator then benchmark all impls under mpirun -n $(nproc)
+mise run run:analyzer:mpi     # MPI solver only (default 4 ranks; override with NRANKS=N)
 ```

@@ -3,7 +3,7 @@
 
 class OpenMP : public StreamlineSolver {
   public:
-    explicit OpenMP(unsigned int threadCount);
+    explicit OpenMP(unsigned int threadCount = 0);
     void computeTimeStep(VectorField::FieldGrid& grid) override;
 
   private:

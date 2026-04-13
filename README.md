@@ -27,7 +27,7 @@ A C++17 research tool for generating and analyzing 2D vector fields. The simulat
 
 ```sh
 mise install     # install pinned tools (cmake, ninja, uv, clang-format, clang-tidy, lychee)
-mise run deps    # install system dependencies (HDF5, cppcheck)
+mise run deps    # install system dependencies (HDF5, OpenMPI, cppcheck)
 mise run build   # configure and build everything
 mise run test    # run all tests
 ```
@@ -50,8 +50,10 @@ mise run test    # run all tests
 | `mise run links` | Check for broken links in markdown files |
 | `mise run ci` | Full pipeline -- mirrors all GitHub Actions jobs |
 | `mise run run:simulator` | Build and run the simulator with `karman_street.toml` (writes `field.h5`) |
-| `mise run run:analyzer` | Build and run the analyzer (reads `field.h5`) |
+| `mise run run:analyzer` | Run simulator then benchmark all solver impls under `mpirun -n $(nproc)` |
+| `mise run run:analyzer:mpi` | Run MPI solver only under mpirun (default 4 ranks; override with `NRANKS=N`) |
 | `mise run visualize` | Animate `field.h5` as a quiver plot |
+| `mise run visualize:streams` | Animate `field.h5` with streamlines overlaid from `field.streams.h5` |
 | `mise run clean` | Remove build artifacts |
 
 Individual targets:
@@ -83,6 +85,7 @@ Individual targets:
 | Dependency | Notes |
 |---|---|
 | HDF5 | Binary data format used by simulator and analyzer |
+| OpenMPI | MPI runtime and headers for the MPI solver |
 | cppcheck | Secondary static analyzer |
 
 **Fetched automatically by CMake** (`FetchContent`)

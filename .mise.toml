@@ -66,14 +66,19 @@ depends = ["build:simulator"]
 run = "./build/bins/simulator/simulator bins/simulator/configs/karman_street.toml"
 
 [tasks."run:analyzer"]
-description = "Generate field data then benchmark all analyzer impls (MPI ranks = nproc)"
+description = "Generate field data then benchmark all analyzer impls (MPI_RANKS, ANALYZER_THREADS)"
 depends = ["build:analyzer", "run:simulator"]
-run = "mpirun -n $(nproc) ./build/bins/analyzer/analyzer bins/analyzer/configs/all.toml"
+run = "mpirun -n ${MPI_RANKS:-4} --oversubscribe ./build/bins/analyzer/analyzer bins/analyzer/configs/all.toml"
+
+[tasks.demo]
+description = "Full pipeline: build, simulate, benchmark all solvers, then visualize"
+depends = ["run:analyzer"]
+run = "uv run tools/visualize.py field.h5 --streams field.streams.h5"
 
 [tasks."run:analyzer:mpi"]
 description = "Run MPI analyzer (NRANKS defaults to 4)"
 depends = ["build:analyzer", "run:simulator"]
-run = "mpirun -n ${NRANKS:-4} ./build/bins/analyzer/analyzer bins/analyzer/configs/mpi.toml"
+run = "mpirun -n ${MPI_RANKS:-4} --oversubscribe ./build/bins/analyzer/analyzer bins/analyzer/configs/mpi.toml"
 
 [tasks.visualize]
 description = "Visualize field.h5 with quiver plot"

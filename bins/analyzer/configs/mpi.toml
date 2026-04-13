@@ -7,4 +7,3 @@
 [analyzer]
 input   = "field.h5"
 solver  = "mpi"
-threads = 0

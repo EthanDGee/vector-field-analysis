@@ -6,7 +6,7 @@ Install [mise](https://mise.jdx.dev/) then run:
 
 ```sh
 mise install        # install pinned tools (cmake, ninja, uv, clang-format, clang-tidy, lychee)
-mise run deps       # install system dependencies via pacman (HDF5, cppcheck)
+mise run deps       # install system dependencies (HDF5, OpenMPI, cppcheck)
 ```
 
 CMake dependencies (HighFive, Catch2, toml++, exprtk, stb_perlin) are fetched
@@ -18,9 +18,8 @@ automatically by `FetchContent` at configure time -- no manual installation need
 
 ```sh
 mise run build                    # configure + build everything (Release)
-mise run build         # vector library only
-mise run build:simulator      # simulator only
-mise run build:analyzer       # analyzer only
+mise run build:simulator          # simulator only
+mise run build:analyzer           # analyzer only
 ```
 
 Build artifacts go in `build/`. Two additional build directories are created for
@@ -105,16 +104,31 @@ mise run links            # check for broken links in all markdown files (lychee
 
 ---
 
-## Running the Simulator
+## Running
+
+### Simulator
 
 ```sh
-mise run run:simulator        # build and run with karman_street.toml (writes field.h5)
-./build/bins/simulator/simulator bins/simulator/configs/vortex.toml
+mise run run:simulator                              # build and run with karman_street.toml (writes field.h5)
+./build/bins/simulator/simulator bins/simulator/configs/vortex.toml  # run with a specific config
 ```
 
+### Analyzer
+
 ```sh
-mise run visualize                # animate field.h5
-mise run run:analyzer         # build and run the analyzer (reads field.h5)
+mise run run:analyzer         # run simulator then benchmark all impls under mpirun -n $(nproc)
+mise run run:analyzer:mpi     # MPI solver only (default 4 ranks; override with NRANKS=N)
+```
+
+`run:analyzer` launches under `mpirun -n $(nproc)` so all parallel solvers (openmp, pthreads, mpi)
+use the same number of workers for a fair comparison. The thread count adapts to the MPI rank count
+automatically, and MPI is skipped with a hint message if the binary is invoked without mpirun.
+
+### Visualize
+
+```sh
+mise run visualize            # animate field.h5 as a quiver plot
+mise run visualize:streams    # animate field.h5 with streamlines overlaid
 ```
 
 ---

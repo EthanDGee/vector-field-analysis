@@ -12,17 +12,17 @@ sequential merge pass.
 ## Quick Start
 
 ```sh
-# Generate a field first (see bins/simulator/)
-simulator bins/simulator/configs/vortex.toml
+# Recommended: build, generate field data, and benchmark all impls in one step
+mise run run:analyzer         # uses MPI_RANKS for a fair apples-to-apples comparison
 
-# Benchmark all implementations
-analyzer bins/analyzer/configs/all.toml
+# MPI solver only with a custom rank count
+MPI_RANKS=8 mise run run:analyzer:mpi
 
-# Run a single implementation
-analyzer bins/analyzer/configs/mpi.toml
-
-# With MPI (N ranks)
-mpirun -n 4 analyzer bins/analyzer/configs/mpi.toml
+# Or drive manually:
+simulator bins/simulator/configs/vortex.toml          # generate field.h5
+analyzer bins/analyzer/configs/all.toml               # benchmark all impls (single-process)
+mpirun -n 4 analyzer bins/analyzer/configs/all.toml   # benchmark with MPI active
+mpirun -n 4 analyzer bins/analyzer/configs/mpi.toml   # MPI solver only, 4 ranks
 ```
 
 ## Input Format
@@ -47,3 +47,4 @@ field/               (group)
 
 - [pipeline.md](pipeline.md) — data flow, algorithm details, and source file map
 - [config-guide.md](config-guide.md) — all TOML config keys and examples
+- [adding-a-solver.md](adding-a-solver.md) — how to implement and register a new solver

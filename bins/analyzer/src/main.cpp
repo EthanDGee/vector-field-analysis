@@ -109,6 +109,12 @@ static unsigned int resolveThreadCount(unsigned int requested) {
     if (requested > 0) {
         return requested;
     }
+    if (const char* env = std::getenv("ANALYZER_THREADS")) {
+        const int val = std::atoi(env);
+        if (val > 0) {
+            return static_cast<unsigned int>(val);
+        }
+    }
     const unsigned int hw = std::thread::hardware_concurrency();
     return hw > 0 ? hw : 1;
 }
@@ -143,8 +149,8 @@ static void runAll(const Vector::FieldTimeSeries& field, unsigned int threadCoun
         const std::string ptLabel = "pthreads (" + std::to_string(threadCount) + " thr)";
         const std::string mpiLabel = "mpi (" + std::to_string(mpiSize) + " rank(s))";
 
-        int labelWidth = static_cast<int>(std::max({seqLabel.size(), ompLabel.size(),
-                                                    ptLabel.size(), mpiLabel.size()})) +
+        int labelWidth = static_cast<int>(std::max(
+                             {seqLabel.size(), ompLabel.size(), ptLabel.size(), mpiLabel.size()})) +
                          2;
         std::cout << std::left << std::setw(labelWidth) << seqLabel << seqResult.ms << " ms\n"
                   << std::setw(labelWidth) << ompLabel << ompResult.ms << " ms"
@@ -173,8 +179,7 @@ static void runAll(const Vector::FieldTimeSeries& field, unsigned int threadCoun
 }
 
 static void runOne(const std::string& solverName, const Vector::FieldTimeSeries& field,
-                   unsigned int threadCount, int mpiRank, int mpiSize,
-                   const std::string& outPath) {
+                   unsigned int threadCount, int mpiRank, int mpiSize, const std::string& outPath) {
     RunResult result{};
     if (solverName == "mpi") {
         auto solver = makeSolver(solverName, threadCount);
