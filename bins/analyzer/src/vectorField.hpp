@@ -36,6 +36,9 @@ class FieldGrid {
 
     void traceStreamlineStepTo(std::pair<int, int> startCoords,
                                std::pair<int, int> destCoords);
+
+    // cuda produces destination row/col arrays directly, this makes it so callers can pass
+    // raw indices instead of pairs
     void traceStreamlineStepTo(int row, int col, int destRow, int destCol) {
       traceStreamlineStepTo(std::make_pair(row, col), 
                             std::make_pair(destRow, destCol));
