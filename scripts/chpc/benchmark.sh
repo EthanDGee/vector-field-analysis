@@ -72,26 +72,31 @@ if [[ -n "$BENCHMARK_GPUS" ]]; then
   fi
 fi
 
-# --- Load modules ---
-module load "$CUDA_MODULE" 2>/dev/null || { echo "error: could not load $CUDA_MODULE" >&2; exit 1; }
+# --- Build via CMake ---
+# Use the project's normal CMake build so all include paths, definitions, and
+# link flags (HighFive/HDF5, toml++, MPI, etc.) are applied correctly.
+cmake_bin="$PROJECT_DIR/build/bins/analyzer/$JOB_BIN"
 
-# --- Compile one binary per unique arch ---
-echo "==> Compiling binaries"
-declare -A compiled
+echo "==> Building $JOB_BIN via CMake"
+if [[ ! -d "$PROJECT_DIR/build" ]]; then
+  echo "error: no cmake build directory found at $PROJECT_DIR/build" >&2
+  echo "error: configure and build the project with cmake before running this script" >&2
+  exit 1
+fi
+cmake --build "$PROJECT_DIR/build" --target "$JOB_BIN" -- -j"$(nproc)"
+
+# --- Stage one binary per unique arch label ---
+# The arch suffix is used as an identifier by job.sh; each config gets its own copy.
+echo "==> Staging binaries"
+declare -A staged
 
 for config in "${CONFIGS[@]}"; do
   read -r label gres partition account arch <<< "$config"
-  if [[ -z "${compiled[$arch]+x}" ]]; then
+  if [[ -z "${staged[$arch]+x}" ]]; then
     job_bin="$PROJECT_DIR/${JOB_BIN}_$arch"
-
-    if [[ ! -f "$job_bin" || "$JOB_SRC" -nt "$job_bin" ]]; then
-      echo "  nvcc $arch: $JOB_BIN"
-      nvcc -O2 -arch="$arch" -Xcompiler -Wall,-Werror -o "$job_bin" "$JOB_SRC"
-    else
-      echo "  $arch: $JOB_BIN up to date"
-    fi
-
-    compiled[$arch]=1
+    cp -f "$cmake_bin" "$job_bin"
+    echo "  $arch: staged $JOB_BIN"
+    staged[$arch]=1
   fi
 done
 

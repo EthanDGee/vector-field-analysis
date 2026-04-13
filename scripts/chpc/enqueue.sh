@@ -22,18 +22,22 @@ GPU_LABEL="${CHPC_GPU%%:*}"
 SM_ARCH="$CUDA_ARCH"
 LOG_DIR="$PROJECT_DIR/logs/$GPU_LABEL"
 bin="$PROJECT_DIR/${JOB_BIN}_${SM_ARCH}"
+cmake_bin="$PROJECT_DIR/build/bins/analyzer/$JOB_BIN"
 
 cd "$PROJECT_DIR"
 
-# --- Compile ---
-module load "$CUDA_MODULE" 2>/dev/null || { echo "error: could not load $CUDA_MODULE" >&2; exit 1; }
-
-echo "==> Compiling $JOB_BIN ($SM_ARCH)"
-if [[ ! -f "$bin" || "$JOB_SRC" -nt "$bin" ]]; then
-  nvcc -O2 -arch="$SM_ARCH" -Xcompiler -Wall,-Werror -o "$bin" "$JOB_SRC"
-else
-  echo "  up to date"
+# --- Build via CMake ---
+# Use the project's normal CMake build so all include paths, definitions, and
+# link flags (HighFive/HDF5, toml++, MPI, etc.) are applied correctly.
+echo "==> Building $JOB_BIN via CMake"
+if [[ ! -d "$PROJECT_DIR/build" ]]; then
+  echo "error: no cmake build directory found at $PROJECT_DIR/build" >&2
+  echo "error: configure and build the project with cmake before running this script" >&2
+  exit 1
 fi
+cmake --build "$PROJECT_DIR/build" --target "$JOB_BIN" -- -j"$(nproc)"
+cp -f "$cmake_bin" "$bin"
+echo "  staged $bin"
 
 # --- Submit ---
 echo ""

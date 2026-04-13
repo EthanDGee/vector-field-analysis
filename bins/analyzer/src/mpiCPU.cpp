@@ -3,7 +3,10 @@
 #include "sequentialCPU.hpp"
 
 #ifdef USE_MPI
+#include <algorithm>
+#include <limits>
 #include <mpi.h>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 #endif
@@ -72,6 +75,9 @@ void MpiCPU::computeTimeStep(VectorField::FieldGrid& grid) {
     // Gather per-rank element counts to root so it can allocate the receive buffer.
     // recvCounts is populated on all ranks so the pointer is valid for MPI_Gatherv;
     // non-root values are only meaningful on rank 0.
+    if (localCount > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+        throw std::overflow_error("localCount exceeds INT_MAX; grid too large for MPI gather");
+    }
     const int localCountInt = static_cast<int>(localCount);
     std::vector<int> recvCounts(static_cast<std::size_t>(size), 0);
     MPI_Gather(&localCountInt, 1, MPI_INT, recvCounts.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
