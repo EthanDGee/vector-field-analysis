@@ -1,7 +1,5 @@
 #include "vectorField.hpp"
 
-#include "vector.hpp"
-
 #include <algorithm>
 #include <cmath>
 #include <ctime>
@@ -35,15 +33,14 @@ std::pair<int, int> FieldGrid::neighborInVectorDirection(std::pair<int, int> coo
 
 void FieldGrid::joinStreamlines(const std::shared_ptr<Vector::Streamline>& start,
                                 const std::shared_ptr<Vector::Streamline>& end) {
-    if (!start || !end || start == end || start->path.empty()) {
+    if (!start || !end || start == end || end->path.empty()) {
         return;
     }
 
     // Absorb end's path into start and redirect all field vectors at those positions
     for (const auto& point : end->path) {
         start->path.push_back(point);
-        field[static_cast<std::size_t>(point.first)][static_cast<std::size_t>(point.second)]
-            .stream = start;
+        streams_[static_cast<std::size_t>(point.first)][static_cast<std::size_t>(point.second)] = start;
     }
 }
 
