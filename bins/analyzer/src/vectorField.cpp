@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <ctime>
 #include <utility>
 
 namespace VectorField {
@@ -46,30 +47,47 @@ void FieldGrid::joinStreamlines(const std::shared_ptr<Vector::Streamline>& start
     }
 }
 
-// Greedy one-step forward trace: advance from startCoords to the neighbor cell
-// its vector points toward. Either extends the current streamline if that cell
-// is unclaimed, or merges with the existing streamline if two paths converge there.
-void FieldGrid::traceStreamlineStep(std::pair<int, int> startCoords) {
-    Vector::Vec2& sourceVec = field[static_cast<std::size_t>(startCoords.first)]
-                                   [static_cast<std::size_t>(startCoords.second)];
+// applies one tracing step when destination cell is already known
+// traceStreamlineStep() did two jobs:
+//  1) compute which neighboring cell the current vector points to
+//  2) update/merge streamline ownership for source and dest cells
+// for CPU/OpenMP/etc, both steps can still happen together
+// for CUDA the GPU should do step one in parallel, then reuse the 
+// existing host side streamline mutation logic for the second step
+void FieldGrid::traceStreamlineStepTo(std::pair<int, int> startCoords,
+                                      std::pair<int, int> destCoords) {
+  // streamline currently associated with starting cell
+  auto& srcStream = streams_[static_cast<std::size_t>(startCoords.first)]
+                            [static_cast<std::size_t>(startCoords.second)];
 
-    if (sourceVec.stream == nullptr) {
-        sourceVec.stream = std::make_shared<Vector::Streamline>(startCoords);
-    }
+  // if start cell doesn't already belong to a streamline:
+  // create one at this start position
+  if (srcStream == nullptr) {
+    srcStream = std::make_shared<Vector::Streamline>(startCoords);
+  }
 
-    const std::pair<int, int> destCoords = neighborInVectorDirection(startCoords);
-    Vector::Vec2& destination = field[static_cast<std::size_t>(destCoords.first)]
-                                     [static_cast<std::size_t>(destCoords.second)];
+  // streamline currently associated with destination cell
+  auto& destStream = streams_[static_cast<std::size_t>(destCoords.first)]
+                             [static_cast<std::size_t>(destCoords.second)];
 
-    if (destination.stream == nullptr) {
-        // Destination is unclaimed: extend the source's streamline into it.
-        destination.stream = sourceVec.stream;
-        sourceVec.stream->path.push_back(destCoords);
+  if (destStream == nullptr) {
+        // Destination is unclaimed
+        // extend the source streamline into that cell and mark the destination
+        // as beloinging to the same streamline object
+        destStream = srcStream;
+        srcStream->path.push_back(destCoords);
     } else {
-        // Destination already belongs to another streamline: the two lines
-        // converge here, so merge them into one.
-        joinStreamlines(destination.stream, sourceVec.stream);
+        // Destination already belongs to another streamline:
+        // merge the source streamline into the destination streamline 
+        // preserves existing behavior from traceStreamlineStep()
+      joinStreamlines(destStream, srcStream);
     }
+}
+
+// original public api is unchanged for sequential, openMP, etc callers
+// still computes destination from the vector field then applies the same streamline logic as before
+void FieldGrid::traceStreamlineStep(std::pair<int, int> startCoords) {
+  traceStreamlineStepTo(startCoords, neighborInVectorDirection(startCoords));
 }
 
 } // namespace VectorField
