@@ -140,6 +140,32 @@ SimulatorConfig parseFile(const std::string& path) {
         config.layers.push_back(FieldLayerConfig{});
     }
 
+    if (config.steps < 1) {
+        throw std::runtime_error("steps must be >= 1");
+    }
+    // gridToWorld requires n >= 2; a 1-cell axis has no valid downstream direction.
+    if (config.grid.width < 2) {
+        throw std::runtime_error("width must be >= 2");
+    }
+    if (config.grid.height < 2) {
+        throw std::runtime_error("height must be >= 2");
+    }
+    if (config.bounds.xMin >= config.bounds.xMax) {
+        throw std::runtime_error("xmin must be < xmax");
+    }
+    if (config.bounds.yMin >= config.bounds.yMax) {
+        throw std::runtime_error("ymin must be < ymax");
+    }
+    if (config.dt <= 0.0f) {
+        throw std::runtime_error("dt must be > 0");
+    }
+    if (config.viscosity < 0.0f) {
+        throw std::runtime_error("viscosity must be >= 0");
+    }
+    if (config.output.empty()) {
+        throw std::runtime_error("output path must not be empty");
+    }
+
     return config;
 }
 

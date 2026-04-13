@@ -17,9 +17,11 @@ Usage:
 
 import argparse
 import concurrent.futures
+import multiprocessing
 import os
 import pickle
 import sys
+import threading
 
 import h5py
 import matplotlib.pyplot as plt
@@ -86,6 +88,14 @@ def precompute_quiver_data(vx, vy, attrs, stride):
     return X, Y, vx_all, vy_all, mag_all
 
 
+_progress_queue: "multiprocessing.Queue | None" = None
+
+
+def _init_worker(q: multiprocessing.Queue) -> None:
+    global _progress_queue
+    _progress_queue = q
+
+
 def _integrate_step(streamlines_step, vx_step, vy_step, xMin, xMax, yMin, yMax):
     """Integrate one time step's streamlines with RK45.
 
@@ -121,7 +131,11 @@ def _integrate_step(streamlines_step, vx_step, vy_step, xMin, xMax, yMin, yMax):
     out_of_domain.terminal = True
     out_of_domain.direction = -1
 
-    t_span = 30.0
+    # t_span: how far to integrate forward and backward from each seed.
+    # Domain spans ~4 units wide, ~2 tall; speed ~1 → exit in 2–4 units.
+    # 8.0 gives ~2 domain crossings before giving up, keeping paths visible
+    # without the 30s worst-case for closed orbits.
+    t_span = 8.0
     max_step = 0.05
 
     curves = []
@@ -167,6 +181,9 @@ def _integrate_step(streamlines_step, vx_step, vy_step, xMin, xMax, yMin, yMax):
         else:
             arrows.append(None)
 
+        if _progress_queue is not None:
+            _progress_queue.put_nowait(1)
+
     return curves, arrows
 
 
@@ -211,27 +228,67 @@ def precompute_stream_curves(streamlines_by_step, vx, vy, attrs, workers=None,
 
     num_steps = len(streamlines_by_step)
     nworkers = min(workers or os.cpu_count() or 1, num_steps)
-    print(f"Pre-computing streamlines: {num_steps} steps, {nworkers} workers...", flush=True)
+    total_streams = sum(len(s) for s in streamlines_by_step)
+    print(
+        f"Pre-computing streamlines: {num_steps} steps, "
+        f"{total_streams} streamlines, {nworkers} workers...",
+        flush=True,
+    )
 
     args = [
         (streamlines_by_step[s], vx[s], vy[s], xMin, xMax, yMin, yMax)
         for s in range(num_steps)
     ]
 
+    q: multiprocessing.Queue = multiprocessing.Queue()
+    done_streams = [0]
+    stop_reader = [False]
+
+    def _progress_reader() -> None:
+        while not stop_reader[0]:
+            try:
+                q.get(timeout=0.1)
+                done_streams[0] += 1
+                print(f"  {done_streams[0]}/{total_streams} streamlines", flush=True)
+            except Exception:
+                pass
+        # drain anything enqueued after stop signal
+        while True:
+            try:
+                q.get_nowait()
+                done_streams[0] += 1
+            except Exception:
+                break
+
+    reader = threading.Thread(target=_progress_reader, daemon=True)
+    reader.start()
+
     results = [None] * num_steps
-    completed = 0
-    with concurrent.futures.ProcessPoolExecutor(max_workers=nworkers) as pool:
-        futures = {pool.submit(_integrate_step, *a): s for s, a in enumerate(args)}
-        for fut in concurrent.futures.as_completed(futures):
-            s = futures[fut]
-            results[s] = fut.result()
-            completed += 1
-            if sys.stdout.isatty():
-                print(f"\r  {completed}/{num_steps}", end="", flush=True)
-            else:
-                print(f"  {completed}/{num_steps}", flush=True)
-    if sys.stdout.isatty():
-        print()
+    steps_done = 0
+    try:
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=nworkers,
+            initializer=_init_worker,
+            initargs=(q,),
+        ) as pool:
+            futures = {pool.submit(_integrate_step, *a): s for s, a in enumerate(args)}
+            try:
+                for fut in concurrent.futures.as_completed(futures):
+                    s = futures[fut]
+                    try:
+                        results[s] = fut.result()
+                    except Exception as e:
+                        print(f"\nStep {s} failed: {e}", file=sys.stderr, flush=True)
+                        raise
+                    steps_done += 1
+            except KeyboardInterrupt:
+                print("\nInterrupted — cancelling workers...", file=sys.stderr, flush=True)
+                for f in futures:
+                    f.cancel()
+                raise
+    finally:
+        stop_reader[0] = True
+        reader.join(timeout=2)
 
     all_curves = [r[0] for r in results]
     all_arrows = [r[1] for r in results]
@@ -355,7 +412,11 @@ def animate(vx, vy, attrs, stride, save, streamlines=None, workers=None,
     plt.tight_layout()
 
     if save:
-        anim.save(save)
+        try:
+            anim.save(save)
+        except Exception as e:
+            print(f"Error saving animation to {save}: {e}", file=sys.stderr)
+            sys.exit(1)
         print(f"Saved to {save}")
     else:
         plt.show()
@@ -386,6 +447,10 @@ def main():
 
     if args.stride < 1:
         print("Error: --stride must be >= 1", file=sys.stderr)
+        sys.exit(1)
+
+    if args.workers < 1:
+        print("Error: --workers must be >= 1", file=sys.stderr)
         sys.exit(1)
 
     try:

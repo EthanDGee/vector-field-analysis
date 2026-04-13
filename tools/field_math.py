@@ -60,9 +60,10 @@ def main():
 
     # Vector field superposition only makes physical sense when both fields share
     # the same grid geometry; a shape mismatch means the grids are incompatible.
-    if vx_a.shape != vx_b.shape:
+    if vx_a.shape != vx_b.shape or vy_a.shape != vy_b.shape:
         print(
-            f"Error: shape mismatch - {args.a} is {vx_a.shape}, {args.b} is {vx_b.shape}",
+            f"Error: shape mismatch - {args.a} vx={vx_a.shape} vy={vy_a.shape},"
+            f" {args.b} vx={vx_b.shape} vy={vy_b.shape}",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -79,7 +80,11 @@ def main():
     # Output inherits spatial metadata (xMin/xMax etc.) from the first operand.
     # Merging attrs from two potentially different configs could produce an
     # inconsistent or ambiguous output file.
-    save(args.out, vx_out, vy_out, attrs_a)
+    try:
+        save(args.out, vx_out, vy_out, attrs_a)
+    except Exception as e:
+        print(f"Error writing {args.out}: {e}", file=sys.stderr)
+        sys.exit(1)
 
     steps, height, width = vx_out.shape
     print(f"{args.a} {op_symbol} {args.b} -> {args.out}  ({width}x{height}, {steps} steps)")

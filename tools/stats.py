@@ -39,10 +39,17 @@ def print_field(path):
             print(f"  [error] no 'field' group in {path}", file=sys.stderr)
             return
         g = f["field"]
+        if "vx" not in g or "vy" not in g:
+            print(f"  [error] missing 'vx' or 'vy' dataset in {path}", file=sys.stderr)
+            return
         vx = g["vx"][:]  # (steps, height, width)
         vy = g["vy"][:]
         attrs = dict(g.attrs)
 
+    if vx.ndim != 3:
+        print(f"  [error] expected 3-D vx array, got shape {vx.shape} in {path}",
+              file=sys.stderr)
+        return
     steps, height, width = vx.shape
     speed = np.sqrt(vx**2 + vy**2)  # (steps, height, width)
 
@@ -90,6 +97,9 @@ def print_streams(path):
             return
         g = f["streams"]
         attrs = dict(g.attrs)
+        if "num_steps" not in attrs:
+            print(f"  [error] missing 'num_steps' attribute in {path}", file=sys.stderr)
+            return
         num_steps = int(attrs["num_steps"])
 
         counts_per_step = []   # streamlines per step
@@ -140,13 +150,16 @@ def detect_and_print(path):
         print(f"Error opening {path}: {e}", file=sys.stderr)
         return
 
-    if "field" in keys:
-        print_field(path)
-    elif "streams" in keys:
-        print_streams(path)
-    else:
-        print(f"Error: {path} has no 'field' or 'streams' group (keys: {sorted(keys)})",
-              file=sys.stderr)
+    try:
+        if "field" in keys:
+            print_field(path)
+        elif "streams" in keys:
+            print_streams(path)
+        else:
+            print(f"Error: {path} has no 'field' or 'streams' group (keys: {sorted(keys)})",
+                  file=sys.stderr)
+    except Exception as e:
+        print(f"Error processing {path}: {e}", file=sys.stderr)
 
 
 def main():

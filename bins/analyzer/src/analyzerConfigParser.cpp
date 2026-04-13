@@ -61,6 +61,10 @@ AnalyzerConfig parseFile(const std::string& path) {
         config.threadCount = static_cast<unsigned int>(*v);
     }
 
+    if (config.inputPath.empty()) {
+        throw std::runtime_error("analyzer.input must not be empty");
+    }
+
     return config;
 }
 

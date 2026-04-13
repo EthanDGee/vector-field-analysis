@@ -73,6 +73,11 @@ struct GridSize {
 // A single time-step snapshot of a 2D vector field. Layout: slice[row][col].
 using FieldSlice = std::vector<std::vector<Vec2>>;
 
+// Maps grid index i (0..n-1) linearly onto [lo, hi]. Precondition: n >= 2.
+[[nodiscard]] inline float gridToWorld(int i, int n, float lo, float hi) {
+    return lo + ((hi - lo) * static_cast<float>(i) / static_cast<float>(n - 1));
+}
+
 // A time series of 2D vector field snapshots with physical-space bounds.
 // Layout: steps[step][row][col].
 struct FieldTimeSeries {

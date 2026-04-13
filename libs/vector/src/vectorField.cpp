@@ -29,13 +29,13 @@ Vector::GridCell FieldGrid::downstreamCell(int row, int col) const {
     // Advance one step in the vector direction, then snap to the nearest grid
     // index. Clamped to valid index bounds so boundary vectors don't reference
     // off-grid cells.
+    const float physRow = Vector::gridToWorld(row, rows, bounds_.yMin, bounds_.yMax);
+    const float physCol = Vector::gridToWorld(col, cols, bounds_.xMin, bounds_.xMax);
     const int nearestRow =
-        std::clamp(static_cast<int>(
-                       std::round(((static_cast<float>(row) * rowSpacing) + start.y) / rowSpacing)),
+        std::clamp(static_cast<int>(std::round((physRow + start.y - bounds_.yMin) / rowSpacing)),
                    0, rows - 1);
     const int nearestCol =
-        std::clamp(static_cast<int>(
-                       std::round(((static_cast<float>(col) * colSpacing) + start.x) / colSpacing)),
+        std::clamp(static_cast<int>(std::round((physCol + start.x - bounds_.xMin) / colSpacing)),
                    0, cols - 1);
 
     return {nearestRow, nearestCol};

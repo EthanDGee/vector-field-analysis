@@ -1,12 +1,17 @@
 #include "fieldWriter.hpp"
 
 #include <highfive/highfive.hpp>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace FieldWriter {
 
 void write(const Vector::FieldTimeSeries& field, const SimulatorConfig& config) {
+    if (field.steps.empty() || config.grid.width <= 0 || config.grid.height <= 0) {
+        throw std::runtime_error("Cannot write empty field to: " + config.output);
+    }
+
     HighFive::File file(config.output, HighFive::File::Overwrite);
     auto group = file.createGroup("field");
 
