@@ -22,12 +22,12 @@ static SimulatorConfig makeConfig(FieldLayerConfig layer, int steps = 1) {
     SimulatorConfig config;
     config.steps = steps;
     config.dt = 0.01f;
-    config.width = 32;
-    config.height = 32;
-    config.xMin = -1.0f;
-    config.xMax = 1.0f;
-    config.yMin = -1.0f;
-    config.yMax = 1.0f;
+    config.grid.width = 32;
+    config.grid.height = 32;
+    config.extents.xMin = -1.0f;
+    config.extents.xMax = 1.0f;
+    config.extents.yMin = -1.0f;
+    config.extents.yMax = 1.0f;
     config.viscosity = 0.0f;
     config.layers = {std::move(layer)};
     return config;
@@ -56,8 +56,8 @@ TEST_CASE("Vortex field is perpendicular to radius", "[simulator]") {
 
     // Perpendicularity: dot product of vortex vector and position vector must be ~0
     for (auto [i, j] : std::initializer_list<std::pair<int, int>>{{24, 16}, {8, 24}, {20, 8}}) {
-        const float px = gridToWorld(i, config.width, config.xMin, config.xMax);
-        const float py = gridToWorld(j, config.height, config.yMin, config.yMax);
+        const float px = gridToWorld(i, config.grid.width, config.extents.xMin, config.extents.xMax);
+        const float py = gridToWorld(j, config.grid.height, config.extents.yMin, config.extents.yMax);
         const auto& v = out.steps[0][j][i];
         // dot(v, pos) = vx*px + vy*py must be zero for a pure vortex
         REQUIRE_THAT((v.x * px) + (v.y * py), WithinAbs(0.0f, 1e-4f));
@@ -69,8 +69,8 @@ TEST_CASE("Vortex field is zero at origin", "[simulator]") {
     layer.type = FieldType::Vortex;
     // Use a 3x3 grid so that the center cell (1,1) lands exactly at (0,0)
     SimulatorConfig config = makeConfig(layer);
-    config.width = 3;
-    config.height = 3;
+    config.grid.width = 3;
+    config.grid.height = 3;
     const auto out = generateTimeSeries(config);
     REQUIRE_THAT(out.steps[0][1][1].magnitude(), WithinAbs(0.0f, 1e-5f));
 }
@@ -86,8 +86,8 @@ TEST_CASE("generateTimeSeries() returns correct 3D dimensions", "[simulator][gen
     auto out = generateTimeSeries(config);
 
     REQUIRE(static_cast<int>(out.steps.size()) == config.steps);
-    REQUIRE(static_cast<int>(out.steps[0].size()) == config.height);
-    REQUIRE(static_cast<int>(out.steps[0][0].size()) == config.width);
+    REQUIRE(static_cast<int>(out.steps[0].size()) == config.grid.height);
+    REQUIRE(static_cast<int>(out.steps[0][0].size()) == config.grid.width);
 }
 
 // ---------------------------------------------------------------------------
@@ -136,16 +136,16 @@ TEST_CASE("Uniform field at angle=90 points up", "[simulator][generate]") {
 TEST_CASE("Source field points away from center", "[simulator][generate]") {
     FieldLayerConfig layer;
     layer.type = FieldType::Source;
-    layer.centerX = 0.0f;
-    layer.centerY = 0.0f;
+    layer.center.x = 0.0f;
+    layer.center.y = 0.0f;
     auto config = makeConfig(layer);
     auto out = generateTimeSeries(config);
     // Cell to the right of center: vx should be positive, vy near zero
     const int i = 24;
     const int j = 16;
     REQUIRE(out.steps[0][j][i].x > 0.0f);
-    const float px = gridToWorld(i, config.width, config.xMin, config.xMax);
-    const float py = gridToWorld(j, config.height, config.yMin, config.yMax);
+    const float px = gridToWorld(i, config.grid.width, config.extents.xMin, config.extents.xMax);
+    const float py = gridToWorld(j, config.grid.height, config.extents.yMin, config.extents.yMax);
     // Angle from center should match vector direction
     const float angle = std::atan2(out.steps[0][j][i].y, out.steps[0][j][i].x);
     const float expected = std::atan2(py, px);
@@ -155,8 +155,8 @@ TEST_CASE("Source field points away from center", "[simulator][generate]") {
 TEST_CASE("Sink field points toward center", "[simulator][generate]") {
     FieldLayerConfig layer;
     layer.type = FieldType::Sink;
-    layer.centerX = 0.0f;
-    layer.centerY = 0.0f;
+    layer.center.x = 0.0f;
+    layer.center.y = 0.0f;
     auto config = makeConfig(layer);
     auto out = generateTimeSeries(config);
     const int i = 24;
@@ -173,8 +173,8 @@ TEST_CASE("Saddle field has opposite signs in x and y relative to center",
           "[simulator][generate]") {
     FieldLayerConfig layer;
     layer.type = FieldType::Saddle;
-    layer.centerX = 0.0f;
-    layer.centerY = 0.0f;
+    layer.center.x = 0.0f;
+    layer.center.y = 0.0f;
     auto config = makeConfig(layer);
     auto out = generateTimeSeries(config);
     // Point at (+x, +y) quadrant: vx > 0, vy < 0
@@ -241,7 +241,7 @@ TEST_CASE("Custom x_expression = \"x\" evaluates to world x-coordinate", "[simul
 
     const int i = 20;
     const int j = 16;
-    const float px = gridToWorld(i, config.width, config.xMin, config.xMax);
+    const float px = gridToWorld(i, config.grid.width, config.extents.xMin, config.extents.xMax);
     REQUIRE_THAT(out.steps[0][j][i].x, WithinAbs(px, 1e-4f));
     REQUIRE_THAT(out.steps[0][j][i].y, WithinAbs(0.0f, 1e-4f));
 }
@@ -306,8 +306,8 @@ TEST_CASE("parseFile() uses defaults when [simulation] section absent", "[simula
     REQUIRE(config.steps == 100);
     REQUIRE_THAT(config.dt, WithinAbs(0.01f, 1e-6f));
     REQUIRE_THAT(config.viscosity, WithinAbs(0.0f, 1e-6f));
-    REQUIRE(config.width == 64);
-    REQUIRE(config.height == 64);
+    REQUIRE(config.grid.width == 64);
+    REQUIRE(config.grid.height == 64);
     REQUIRE(config.layers.size() == 1);
     REQUIRE(config.layers[0].type == FieldType::Vortex);
 }
@@ -330,12 +330,12 @@ TEST_CASE("parseFile() reads [simulation] values correctly", "[simulator][config
     REQUIRE_THAT(config.dt, WithinAbs(0.05f, 1e-6f));
     REQUIRE_THAT(config.viscosity, WithinAbs(0.1f, 1e-5f));
     REQUIRE(config.output == std::string("out.h5"));
-    REQUIRE(config.width == 16);
-    REQUIRE(config.height == 8);
-    REQUIRE_THAT(config.xMin, WithinAbs(-2.0f, 1e-6f));
-    REQUIRE_THAT(config.xMax, WithinAbs(2.0f, 1e-6f));
-    REQUIRE_THAT(config.yMin, WithinAbs(-0.5f, 1e-6f));
-    REQUIRE_THAT(config.yMax, WithinAbs(0.5f, 1e-6f));
+    REQUIRE(config.grid.width == 16);
+    REQUIRE(config.grid.height == 8);
+    REQUIRE_THAT(config.extents.xMin, WithinAbs(-2.0f, 1e-6f));
+    REQUIRE_THAT(config.extents.xMax, WithinAbs(2.0f, 1e-6f));
+    REQUIRE_THAT(config.extents.yMin, WithinAbs(-0.5f, 1e-6f));
+    REQUIRE_THAT(config.extents.yMax, WithinAbs(0.5f, 1e-6f));
 }
 
 TEST_CASE("parseFile() defaults to one vortex layer when [[layers]] absent",
@@ -387,8 +387,8 @@ TEST_CASE("parseFile() reads layer parameters", "[simulator][config]") {
     const FieldLayerConfig& layer = config.layers[0];
     REQUIRE(layer.type == FieldType::Spiral);
     REQUIRE_THAT(layer.strength, WithinAbs(2.5f, 1e-5f));
-    REQUIRE_THAT(layer.centerX, WithinAbs(0.3f, 1e-5f));
-    REQUIRE_THAT(layer.centerY, WithinAbs(-0.1f, 1e-5f));
+    REQUIRE_THAT(layer.center.x, WithinAbs(0.3f, 1e-5f));
+    REQUIRE_THAT(layer.center.y, WithinAbs(-0.1f, 1e-5f));
     REQUIRE_THAT(layer.sinkBlend, WithinAbs(0.7f, 1e-5f));
     REQUIRE_THAT(layer.scale, WithinAbs(2.0f, 1e-5f));
     REQUIRE(layer.seed == 42);
@@ -481,7 +481,7 @@ TEST_CASE("Custom y_expression = \"y\" evaluates to world y-coordinate", "[simul
     const auto out = generateTimeSeries(config);
 
     const int row = 20;
-    const float py = gridToWorld(row, config.height, config.yMin, config.yMax);
+    const float py = gridToWorld(row, config.grid.height, config.extents.yMin, config.extents.yMax);
     REQUIRE_THAT(out.steps[0][row][8].y, WithinAbs(py, 1e-4f));
     REQUIRE_THAT(out.steps[0][row][8].x, WithinAbs(0.0f, 1e-4f));
 }
@@ -510,8 +510,8 @@ TEST_CASE("Invalid custom expression throws", "[simulator][generate]") {
 TEST_CASE("Empty layers produces all-zero output", "[simulator][generate]") {
     SimulatorConfig config;
     config.steps = 1;
-    config.width = 4;
-    config.height = 4;
+    config.grid.width = 4;
+    config.grid.height = 4;
     config.layers = {};
     const auto out = generateTimeSeries(config);
 
@@ -570,8 +570,8 @@ TEST_CASE("FieldWriter::write() stores vx/vy with correct dimensions [steps][hei
     const auto dims = group.getDataSet("vx").getDimensions();
     REQUIRE(static_cast<int>(dims.size()) == 3);
     REQUIRE(dims[0] == static_cast<std::size_t>(config.steps));
-    REQUIRE(dims[1] == static_cast<std::size_t>(config.height));
-    REQUIRE(dims[2] == static_cast<std::size_t>(config.width));
+    REQUIRE(dims[1] == static_cast<std::size_t>(config.grid.height));
+    REQUIRE(dims[2] == static_cast<std::size_t>(config.grid.width));
 
     std::error_code ec;
     std::filesystem::remove(tmpPath, ec);

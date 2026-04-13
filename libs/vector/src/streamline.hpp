@@ -1,15 +1,15 @@
 #pragma once
-#include <vector>
+#include "vector.hpp"
 
 namespace Vector {
 
 class Streamline {
   public:
-    // Ordered grid indices (row, col) of each cell on the traced path,
-    // starting from the seed cell and growing one step at a time.
-    std::vector<std::pair<int, int>> path;
+    // Ordered grid cells on the traced path, starting from the seed cell
+    // and growing one step at a time.
+    Path path;
 
-    explicit Streamline(std::pair<int, int> startPoint);
+    explicit Streamline(GridCell startPoint);
 };
 
 } // namespace Vector

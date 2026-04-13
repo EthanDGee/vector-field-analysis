@@ -32,7 +32,7 @@ static RunResult runSolver(StreamlineSolver& solver, const Vector::FieldTimeSeri
     RunResult result;
     auto t0 = std::chrono::steady_clock::now();
     for (const auto& step : data.steps) {
-        VectorField::FieldGrid grid(data.xMin, data.xMax, data.yMin, data.yMax, step);
+        VectorField::FieldGrid grid(data.extents, step);
         solver.computeTimeStep(grid);
         result.streams.push_back(grid.getStreamlines());
     }
@@ -45,7 +45,7 @@ static RunResult runSolver(StreamlineSolver& solver, const Vector::FieldTimeSeri
 // points, so path traversal order is preserved while comparison stays
 // independent of the order in which unique streamlines were encountered
 // during grid iteration.
-static std::vector<std::vector<std::pair<int, int>>> canonicalize(const StepStreamlines& step) {
+static std::vector<Vector::Path> canonicalize(const StepStreamlines& step) {
     auto copy = step;
     std::sort(copy.begin(), copy.end(), [](const auto& a, const auto& b) {
         if (a.empty() != b.empty()) {
@@ -110,58 +110,55 @@ static unsigned int resolveThreadCount(unsigned int requested) {
     return hw > 0 ? hw : 1;
 }
 
-static void runAll(const Vector::FieldTimeSeries& data, unsigned int threadCount, int mpiRank,
+static void runAll(const Vector::FieldTimeSeries& field, unsigned int threadCount, int mpiRank,
                    int mpiSize, const std::string& inPath) {
     // Non-MPI solvers: only rank 0 needs their results; skip on other ranks.
-    RunResult seqR{};
-    RunResult ompR{};
-    RunResult ptR{};
+    RunResult seqResult{};
+    RunResult ompResult{};
+    RunResult ptResult{};
     if (mpiRank == 0) {
         auto seq = makeSolver("sequential", threadCount);
         auto omp = makeSolver("openmp", threadCount);
         auto pt  = makeSolver("pthreads", threadCount);
-        seqR = runSolver(*seq, data);
-        ompR = runSolver(*omp, data);
-        ptR  = runSolver(*pt, data);
+        seqResult = runSolver(*seq, field);
+        ompResult = runSolver(*omp, field);
+        ptResult  = runSolver(*pt, field);
     }
     // MPI solver: all ranks must participate (collective calls inside).
     auto mpi = makeSolver("mpi", threadCount);
-    const auto mpiR = runSolver(*mpi, data);
+    const auto mpiResult = runSolver(*mpi, field);
 
     if (mpiRank == 0) {
         const std::string seqLabel = "sequential";
         const std::string ompLabel = "openmp";
         const std::string ptLabel  = "pthreads (" + std::to_string(threadCount) + " thr)";
         const std::string mpiLabel = "mpi (" + std::to_string(mpiSize) + " rank(s))";
-        const int w = static_cast<int>(
+        const int labelWidth = static_cast<int>(
             std::max({seqLabel.size(), ompLabel.size(), ptLabel.size(), mpiLabel.size()})) + 2;
         std::cout << std::left
-                  << std::setw(w) << seqLabel << seqR.ms << " ms\n"
-                  << std::setw(w) << ompLabel << ompR.ms << " ms"
-                  << "  (" << (ompR.ms > 0 ? seqR.ms / ompR.ms : 0.0) << "x vs sequential)\n"
-                  << std::setw(w) << ptLabel  << ptR.ms  << " ms"
-                  << "  (" << (ptR.ms  > 0 ? seqR.ms / ptR.ms  : 0.0) << "x vs sequential)\n"
-                  << std::setw(w) << mpiLabel << mpiR.ms << " ms"
-                  << "  (" << (mpiR.ms > 0 ? seqR.ms / mpiR.ms : 0.0) << "x vs sequential)\n";
+                  << std::setw(labelWidth) << seqLabel << seqResult.ms << " ms\n"
+                  << std::setw(labelWidth) << ompLabel << ompResult.ms << " ms"
+                  << "  (" << (ompResult.ms > 0 ? seqResult.ms / ompResult.ms : 0.0) << "x vs sequential)\n"
+                  << std::setw(labelWidth) << ptLabel  << ptResult.ms  << " ms"
+                  << "  (" << (ptResult.ms  > 0 ? seqResult.ms / ptResult.ms  : 0.0) << "x vs sequential)\n"
+                  << std::setw(labelWidth) << mpiLabel << mpiResult.ms << " ms"
+                  << "  (" << (mpiResult.ms > 0 ? seqResult.ms / mpiResult.ms : 0.0) << "x vs sequential)\n";
 
-        verify(seqR.streams, ompR.streams, "openmp");
-        verify(seqR.streams, ptR.streams, "pthreads");
-        verify(seqR.streams, mpiR.streams, "mpi");
+        verify(seqResult.streams, ompResult.streams, "openmp");
+        verify(seqResult.streams, ptResult.streams, "pthreads");
+        verify(seqResult.streams, mpiResult.streams, "mpi");
 
-        const int height = static_cast<int>(data.steps[0].size());
-        const int width = static_cast<int>(data.steps[0][0].size());
         const std::string outPath = makeOutPath(inPath);
-        StreamWriter::write(outPath, seqR.streams, data.xMin, data.xMax, data.yMin, data.yMax,
-                            width, height);
+        StreamWriter::write(outPath, seqResult.streams, field.extents, field.gridSize());
         std::cout << "\nStreamlines written to " << outPath << "\n";
     }
 }
 
-static void runOne(const std::string& solverName, const Vector::FieldTimeSeries& data,
+static void runOne(const std::string& solverName, const Vector::FieldTimeSeries& field,
                    unsigned int threadCount, int mpiRank, int mpiSize,
                    const std::string& inPath) {
     auto solver = makeSolver(solverName, threadCount);
-    const auto result = runSolver(*solver, data);
+    const auto result = runSolver(*solver, field);
 
     if (mpiRank == 0) {
         std::string label = solverName;
@@ -172,11 +169,8 @@ static void runOne(const std::string& solverName, const Vector::FieldTimeSeries&
         }
         std::cout << label << "  " << result.ms << " ms\n";
 
-        const int height = static_cast<int>(data.steps[0].size());
-        const int width = static_cast<int>(data.steps[0][0].size());
         const std::string outPath = makeOutPath(inPath);
-        StreamWriter::write(outPath, result.streams, data.xMin, data.xMax, data.yMin, data.yMax,
-                            width, height);
+        StreamWriter::write(outPath, result.streams, field.extents, field.gridSize());
         std::cout << "\nStreamlines written to " << outPath << "\n";
     }
 }
@@ -220,16 +214,15 @@ int main(int argc, char* argv[]) {
     try {
         const AnalyzerConfig config = AnalyzerConfigParser::parseFile(argv[1]);
         const unsigned int threadCount = resolveThreadCount(config.threadCount);
-        const Vector::FieldTimeSeries data = FieldReader::read(config.inputPath);
+        const Vector::FieldTimeSeries field = FieldReader::read(config.inputPath);
 
-        if (data.steps.empty()) {
+        if (field.steps.empty()) {
             throw std::runtime_error("field file contains no time steps: " + config.inputPath);
         }
 
         if (mpiRank == 0) {
-            const int numSteps = static_cast<int>(data.steps.size());
-            const int height = static_cast<int>(data.steps[0].size());
-            const int width = static_cast<int>(data.steps[0][0].size());
+            const int numSteps = static_cast<int>(field.steps.size());
+            const auto [width, height] = field.gridSize();
             std::cout << "Field: " << config.inputPath << "  " << width << "x" << height << "  "
                       << numSteps << " step(s)";
             if (mpiSize > 1) {
@@ -239,9 +232,9 @@ int main(int argc, char* argv[]) {
         }
 
         if (config.solver == "all") {
-            runAll(data, threadCount, mpiRank, mpiSize, config.inputPath);
+            runAll(field, threadCount, mpiRank, mpiSize, config.inputPath);
         } else {
-            runOne(config.solver, data, threadCount, mpiRank, mpiSize, config.inputPath);
+            runOne(config.solver, field, threadCount, mpiRank, mpiSize, config.inputPath);
         }
     } catch (const std::exception& e) {
         if (mpiRank == 0) {

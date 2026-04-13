@@ -7,23 +7,23 @@
 
 namespace {
 
-std::pair<std::size_t, std::size_t> calculateRowSplit(std::size_t rowCount, std::size_t splits) {
-    if (splits == 0) {
-        throw std::invalid_argument("splits must be greater than 0");
+std::pair<std::size_t, std::size_t> calculateRowSplit(std::size_t rowCount, std::size_t numParts) {
+    if (numParts == 0) {
+        throw std::invalid_argument("numParts must be greater than 0");
     }
-    return {rowCount / splits, rowCount % splits};
+    return {rowCount / numParts, rowCount % numParts};
 }
 
 struct ThreadData {
     const VectorField::FieldGrid* grid;
-    std::pair<int, int>* neighbors;
+    Vector::GridCell* neighbors;
     int colCount;
     std::size_t startRow;
     std::size_t endRow;
 };
 
 // Pass 1 worker: reads neighbor directions for an assigned row range.
-// neighborInVectorDirection is const and reads no shared mutable state, so
+// downstreamCell is const and reads no shared mutable state, so
 // concurrent calls across disjoint row ranges are race-free.
 void* computeNeighbors(void* arg) {
     auto* data = static_cast<ThreadData*>(arg);
@@ -31,7 +31,7 @@ void* computeNeighbors(void* arg) {
         for (int col = 0; col < data->colCount; col++) {
             data->neighbors[(row * static_cast<std::size_t>(data->colCount)) +
                             static_cast<std::size_t>(col)] =
-                data->grid->neighborInVectorDirection(static_cast<int>(row), col);
+                data->grid->downstreamCell(static_cast<int>(row), col);
         }
     }
     return nullptr;
@@ -54,11 +54,11 @@ void Pthreads::computeTimeStep(VectorField::FieldGrid& grid) {
     const int colCount = static_cast<int>(grid.cols());
 
     // Pass 1: parallel — compute all (src, dest) neighbor pairs.
-    std::vector<std::pair<int, int>> neighbors(rowCount * static_cast<std::size_t>(colCount));
+    std::vector<Vector::GridCell> neighbors(rowCount * static_cast<std::size_t>(colCount));
 
-    auto splits = calculateRowSplit(rowCount, threadCount_);
-    const std::size_t rowsPerThread = splits.first;
-    const std::size_t leftOverRows = splits.second;
+    auto rowSplit = calculateRowSplit(rowCount, threadCount_);
+    const std::size_t rowsPerThread = rowSplit.first;
+    const std::size_t remainderRows = rowSplit.second;
 
     std::vector<pthread_t> threads(threadCount_);
     std::vector<ThreadData> threadData(threadCount_);
@@ -71,9 +71,9 @@ void Pthreads::computeTimeStep(VectorField::FieldGrid& grid) {
         threadData[id].colCount = colCount;
         threadData[id].startRow = currentRow;
 
-        // Last thread receives leftover rows
+        // Last thread receives remainder rows
         if (id == threadCount_ - 1) {
-            threadData[id].endRow = currentRow + rowsPerThread + leftOverRows;
+            threadData[id].endRow = currentRow + rowsPerThread + remainderRows;
         } else {
             threadData[id].endRow = currentRow + rowsPerThread;
         }

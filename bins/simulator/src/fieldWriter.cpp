@@ -12,13 +12,12 @@ void write(const Vector::FieldTimeSeries& field, const SimulatorConfig& config) 
     auto group = file.createGroup("field");
 
     // HDF5 requires flat numeric arrays; extract x/y components from Vec2.
+    using RawFieldData = std::vector<std::vector<std::vector<float>>>;  // [step][row][col]
     const std::size_t numSteps = field.steps.size();
-    const auto height = static_cast<std::size_t>(config.height);
-    const auto width = static_cast<std::size_t>(config.width);
-    std::vector<std::vector<std::vector<float>>> vx(
-        numSteps, std::vector<std::vector<float>>(height, std::vector<float>(width)));
-    std::vector<std::vector<std::vector<float>>> vy(
-        numSteps, std::vector<std::vector<float>>(height, std::vector<float>(width)));
+    const auto height = static_cast<std::size_t>(config.grid.height);
+    const auto width = static_cast<std::size_t>(config.grid.width);
+    RawFieldData vx(numSteps, std::vector<std::vector<float>>(height, std::vector<float>(width)));
+    RawFieldData vy(numSteps, std::vector<std::vector<float>>(height, std::vector<float>(width)));
     for (std::size_t s = 0; s < numSteps; ++s) {
         for (std::size_t r = 0; r < height; ++r) {
             for (std::size_t c = 0; c < width; ++c) {
@@ -37,26 +36,27 @@ void write(const Vector::FieldTimeSeries& field, const SimulatorConfig& config) 
     // The format is informational; no reader is expected to parse it back
     // into individual layer types.
     std::string typeLabel;
-    for (const auto& fieldConfig : config.layers) {
+    for (const auto& layer : config.layers) {
         if (!typeLabel.empty()) {
             typeLabel += '+';
         }
-        typeLabel += toString(fieldConfig.type);
+        typeLabel += toString(layer.type);
     }
 
     group.createAttribute("type", typeLabel);
     group.createAttribute("steps", config.steps);
     group.createAttribute("dt", config.dt);
     group.createAttribute("viscosity", config.viscosity);
-    group.createAttribute("width", config.width);
-    group.createAttribute("height", config.height);
-    group.createAttribute("xMin", config.xMin);
-    group.createAttribute("xMax", config.xMax);
-    group.createAttribute("yMin", config.yMin);
-    group.createAttribute("yMax", config.yMax);
+    group.createAttribute("width", config.grid.width);
+    group.createAttribute("height", config.grid.height);
+    group.createAttribute("xMin", config.extents.xMin);
+    group.createAttribute("xMax", config.extents.xMax);
+    group.createAttribute("yMin", config.extents.yMin);
+    group.createAttribute("yMax", config.extents.yMax);
 
-    std::cout << "Wrote " << config.output << " (" << config.width << "x" << config.height << ", "
-              << config.steps << " steps, type=" << typeLabel << ")\n";
+    std::cout << "Wrote " << config.output << " (" << config.grid.width << "x"
+              << config.grid.height << ", " << config.steps << " steps, type=" << typeLabel
+              << ")\n";
 }
 
 } // namespace FieldWriter

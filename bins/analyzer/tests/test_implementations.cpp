@@ -8,12 +8,12 @@
 
 // 3x3 grid where all vectors point right (+x)
 static VectorField::FieldGrid makeGrid() {
-    return {0.0f, 2.0f, 0.0f, 2.0f,
+    return {Vector::FieldBounds{0.0f, 2.0f, 0.0f, 2.0f},
             Vector::FieldSlice(3, std::vector<Vector::Vec2>(3, Vector::Vec2(1.0f, 0.0f)))};
 }
 
 static VectorField::FieldGrid makeEmptyGrid() {
-    return {0.0f, 2.0f, 0.0f, 2.0f, Vector::FieldSlice{}};
+    return {Vector::FieldBounds{0.0f, 2.0f, 0.0f, 2.0f}, Vector::FieldSlice{}};
 }
 
 // ---------------------------------------------------------------------------
@@ -132,9 +132,9 @@ TEST_CASE("SequentialCPU getStreamlines path contents are correct for uniform 3x
     SequentialCPU{}.computeTimeStep(grid);
     const auto lines = grid.getStreamlines();
     REQUIRE(lines.size() == 3);
-    REQUIRE(lines[0] == (std::vector<std::pair<int, int>>{{0, 0}, {0, 1}, {0, 2}}));
-    REQUIRE(lines[1] == (std::vector<std::pair<int, int>>{{1, 0}, {1, 1}, {1, 2}}));
-    REQUIRE(lines[2] == (std::vector<std::pair<int, int>>{{2, 0}, {2, 1}, {2, 2}}));
+    REQUIRE(lines[0] == (Vector::Path{{0, 0}, {0, 1}, {0, 2}}));
+    REQUIRE(lines[1] == (Vector::Path{{1, 0}, {1, 1}, {1, 2}}));
+    REQUIRE(lines[2] == (Vector::Path{{2, 0}, {2, 1}, {2, 2}}));
 }
 
 TEST_CASE("OpenMP getStreamlines returns same count as sequential on uniform 3x3 field",
@@ -196,7 +196,7 @@ TEST_CASE("getStreamlines returns non-empty result after any impl on non-empty f
 // ---------------------------------------------------------------------------
 
 TEST_CASE("all impls agree on neighbor directions for uniform field", "[impl][consistency]") {
-    // neighborInVectorDirection is const and deterministic -- compute expected
+    // downstreamCell is const and deterministic -- compute expected
     // results once, then verify each impl doesn't deviate from the field geometry.
     auto ref = makeGrid();
     const int rows = static_cast<int>(ref.rows());
@@ -206,7 +206,7 @@ TEST_CASE("all impls agree on neighbor directions for uniform field", "[impl][co
     // the right (clamped at the edge).
     for (int r = 0; r < rows; r++) {
         for (int c = 0; c < cols; c++) {
-            auto [nr, nc] = ref.neighborInVectorDirection(r, c);
+            auto [nr, nc] = ref.downstreamCell(r, c);
             REQUIRE(nr == r);
             REQUIRE(nc == std::min(c + 1, cols - 1));
         }

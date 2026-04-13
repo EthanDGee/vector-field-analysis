@@ -53,10 +53,10 @@ FieldLayerConfig parseLayerConfig(const toml::table& table) {
         layer.strength = static_cast<float>(*v);
     }
     if (const auto v = table["center_x"].value<double>()) {
-        layer.centerX = static_cast<float>(*v);
+        layer.center.x = static_cast<float>(*v);
     }
     if (const auto v = table["center_y"].value<double>()) {
-        layer.centerY = static_cast<float>(*v);
+        layer.center.y = static_cast<float>(*v);
     }
     if (const auto v = table["angle"].value<double>()) {
         layer.angle = static_cast<float>(*v);
@@ -97,22 +97,22 @@ SimulatorConfig parseSimulationSection(const toml::table& simulation) {
         config.output = *v;
     }
     if (const auto v = simulation["width"].value<int64_t>()) {
-        config.width = static_cast<int>(*v);
+        config.grid.width = static_cast<int>(*v);
     }
     if (const auto v = simulation["height"].value<int64_t>()) {
-        config.height = static_cast<int>(*v);
+        config.grid.height = static_cast<int>(*v);
     }
     if (const auto v = simulation["xmin"].value<double>()) {
-        config.xMin = static_cast<float>(*v);
+        config.extents.xMin = static_cast<float>(*v);
     }
     if (const auto v = simulation["xmax"].value<double>()) {
-        config.xMax = static_cast<float>(*v);
+        config.extents.xMax = static_cast<float>(*v);
     }
     if (const auto v = simulation["ymin"].value<double>()) {
-        config.yMin = static_cast<float>(*v);
+        config.extents.yMin = static_cast<float>(*v);
     }
     if (const auto v = simulation["ymax"].value<double>()) {
-        config.yMax = static_cast<float>(*v);
+        config.extents.yMax = static_cast<float>(*v);
     }
     return config;
 }

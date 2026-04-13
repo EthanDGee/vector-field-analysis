@@ -6,7 +6,6 @@
 #include <omp.h>
 #endif
 
-#include <utility>
 #include <vector>
 
 void OpenMP::computeTimeStep(VectorField::FieldGrid& grid) {
@@ -17,15 +16,15 @@ void OpenMP::computeTimeStep(VectorField::FieldGrid& grid) {
     }
     const int colCount = static_cast<int>(grid.cols());
 
-    // Pass 1: parallel — each cell reads its neighbor direction from grid_ (read-only).
-    // neighborInVectorDirection is const and touches no shared mutable state.
-    std::vector<std::pair<int, int>> neighbors(static_cast<std::size_t>(rowCount * colCount));
+    // Pass 1: parallel — each cell reads its neighbor direction from field_ (read-only).
+    // downstreamCell is const and touches no shared mutable state.
+    std::vector<Vector::GridCell> neighbors(static_cast<std::size_t>(rowCount * colCount));
 
 #pragma omp parallel for schedule(static) collapse(2)
     for (int row = 0; row < rowCount; row++) {
         for (int col = 0; col < colCount; col++) {
             neighbors[static_cast<std::size_t>(row * colCount + col)] =
-                grid.neighborInVectorDirection(row, col);
+                grid.downstreamCell(row, col);
         }
     }
 

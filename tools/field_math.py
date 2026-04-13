@@ -70,11 +70,11 @@ def main():
     if args.op == "add":
         vx_out = vx_a + vx_b
         vy_out = vy_a + vy_b
-        op_sym = "+"
+        op_symbol = "+"
     else:
         vx_out = vx_a - vx_b
         vy_out = vy_a - vy_b
-        op_sym = "-"
+        op_symbol = "-"
 
     # Output inherits spatial metadata (xMin/xMax etc.) from the first operand.
     # Merging attrs from two potentially different configs could produce an
@@ -82,7 +82,7 @@ def main():
     save(args.out, vx_out, vy_out, attrs_a)
 
     steps, height, width = vx_out.shape
-    print(f"{args.a} {op_sym} {args.b} -> {args.out}  ({width}x{height}, {steps} steps)")
+    print(f"{args.a} {op_symbol} {args.b} -> {args.out}  ({width}x{height}, {steps} steps)")
 
 
 if __name__ == "__main__":

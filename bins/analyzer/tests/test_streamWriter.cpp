@@ -14,7 +14,7 @@ static const StepStreamlines kStep1 = {{{2, 0}, {2, 1}, {2, 2}, {2, 3}}};
 static void writeFixture(const std::filesystem::path& path) {
     std::error_code ec;
     std::filesystem::remove(path, ec);
-    StreamWriter::write(path.string(), {kStep0, kStep1}, -1.0f, 1.0f, -1.0f, 1.0f, 4, 3);
+    StreamWriter::write(path.string(), {kStep0, kStep1}, {-1.0f, 1.0f, -1.0f, 1.0f}, {4, 3});
 }
 
 TEST_CASE("StreamWriter::write() emits correct group attributes", "[streamwriter]") {
@@ -77,7 +77,7 @@ TEST_CASE("StreamWriter::write() overwrites existing output file", "[streamwrite
     writeFixture(path);
     std::vector<StepStreamlines> allSteps = {{}};
     // Truncate mode: re-writing to an existing path must succeed, not throw.
-    REQUIRE_NOTHROW(StreamWriter::write(path.string(), allSteps, 0.0f, 1.0f, 0.0f, 1.0f, 2, 2));
+    REQUIRE_NOTHROW(StreamWriter::write(path.string(), allSteps, {0.0f, 1.0f, 0.0f, 1.0f}, {2, 2}));
     std::error_code ec;
     std::filesystem::remove(path, ec);
 }

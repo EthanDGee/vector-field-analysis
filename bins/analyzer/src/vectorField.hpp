@@ -12,20 +12,17 @@ namespace VectorField {
 // Stream associations are tracked in a parallel grid (streams_) rather than
 // inside Vec2, keeping the generic math type free of domain state.
 class FieldGrid {
-    const float xMin, xMax, yMin, yMax;
+    const Vector::FieldBounds extents_;
     Vector::FieldSlice field_;
     std::vector<std::vector<std::shared_ptr<Vector::Streamline>>> streams_;
 
   public:
-    FieldGrid(float xMin, float xMax, float yMin, float yMax, Vector::FieldSlice field)
-        : xMin(xMin),
-          xMax(xMax),
-          yMin(yMin),
-          yMax(yMax),
+    FieldGrid(Vector::FieldBounds extents, Vector::FieldSlice field)
+        : extents_(extents),
           field_(std::move(field)) {
-        const std::size_t r = field_.size();
-        const std::size_t c = r > 0 ? field_[0].size() : 0;
-        streams_.assign(r, std::vector<std::shared_ptr<Vector::Streamline>>(c, nullptr));
+        const std::size_t numRows = field_.size();
+        const std::size_t numCols = numRows > 0 ? field_[0].size() : 0;
+        streams_.assign(numRows, std::vector<std::shared_ptr<Vector::Streamline>>(numCols, nullptr));
     }
 
     [[nodiscard]] std::size_t rows() const { return field_.size(); }
@@ -33,8 +30,8 @@ class FieldGrid {
 
     // Returns the grid cell (row, col) that the vector at (row, col) points
     // toward. Read-only; safe to call from multiple threads simultaneously.
-    [[nodiscard]] std::pair<int, int> neighborInVectorDirection(int row, int col) const;
-    [[nodiscard]] std::pair<int, int> neighborInVectorDirection(std::pair<int, int> coords) const;
+    [[nodiscard]] Vector::GridCell downstreamCell(int row, int col) const;
+    [[nodiscard]] Vector::GridCell downstreamCell(Vector::GridCell coords) const;
 
     // Merges end's streamline path into start's, redirecting all field vector
     // references. Null or self-merge arguments are silently ignored -- they
@@ -46,19 +43,21 @@ class FieldGrid {
     // Applies one streamline step: src extends toward dest (or merges if dest
     // is already claimed). NOT thread-safe -- call from one thread at a time.
     // Parallel callers should gather all (src,dest) pairs via
-    // neighborInVectorDirection first, then apply sequentially.
-    void traceStreamlineStep(std::pair<int, int> src, std::pair<int, int> dest);
+    // downstreamCell first, then apply sequentially.
+    void traceStreamlineStep(Vector::GridCell src, Vector::GridCell dest);
 
     // Convenience: computes dest and applies in one call. Not thread-safe.
-    void traceStreamlineStep(std::pair<int, int> startCoords) {
-        traceStreamlineStep(startCoords, neighborInVectorDirection(startCoords));
+    void traceStreamlineStep(Vector::GridCell startCoords) {
+        traceStreamlineStep(startCoords, downstreamCell(startCoords));
     }
-    void traceStreamlineStep(int row, int col) { traceStreamlineStep(std::make_pair(row, col)); }
+    void traceStreamlineStep(int row, int col) {
+        traceStreamlineStep(Vector::GridCell{row, col});
+    }
 
     // Returns the unique streamlines found after tracing. Each streamline is an
     // ordered list of (row, col) grid indices. Collected in row-major iteration
     // order of streams_ — deterministic for a given trace run.
-    [[nodiscard]] std::vector<std::vector<std::pair<int, int>>> getStreamlines() const;
+    [[nodiscard]] std::vector<Vector::Path> getStreamlines() const;
 };
 
 } // namespace VectorField

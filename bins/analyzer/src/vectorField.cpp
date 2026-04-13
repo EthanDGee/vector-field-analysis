@@ -3,15 +3,14 @@
 #include <algorithm>
 #include <cmath>
 #include <unordered_set>
-#include <utility>
 
 namespace VectorField {
 
-std::pair<int, int> FieldGrid::neighborInVectorDirection(int row, int col) const {
+Vector::GridCell FieldGrid::downstreamCell(int row, int col) const {
     const Vector::Vec2 start = field_[static_cast<std::size_t>(row)][static_cast<std::size_t>(col)];
 
-    const float rowSpacing = (yMax - yMin) / static_cast<float>(field_.size() - 1);
-    const float colSpacing = (xMax - xMin) / static_cast<float>(field_[0].size() - 1);
+    const float rowSpacing = (extents_.yMax - extents_.yMin) / static_cast<float>(field_.size() - 1);
+    const float colSpacing = (extents_.xMax - extents_.xMin) / static_cast<float>(field_[0].size() - 1);
 
     // Advance one step in the vector direction, then snap to the nearest grid
     // index. Clamped to valid index bounds so boundary vectors don't reference
@@ -28,8 +27,8 @@ std::pair<int, int> FieldGrid::neighborInVectorDirection(int row, int col) const
     return {nearestRow, nearestCol};
 }
 
-std::pair<int, int> FieldGrid::neighborInVectorDirection(std::pair<int, int> coords) const {
-    return neighborInVectorDirection(coords.first, coords.second);
+Vector::GridCell FieldGrid::downstreamCell(Vector::GridCell coords) const {
+    return downstreamCell(coords.row, coords.col);
 }
 
 void FieldGrid::joinStreamlines(const std::shared_ptr<Vector::Streamline>& start,
@@ -41,24 +40,23 @@ void FieldGrid::joinStreamlines(const std::shared_ptr<Vector::Streamline>& start
     // Absorb end's path into start and redirect all stream entries at those positions
     for (const auto& point : end->path) {
         start->path.push_back(point);
-        streams_[static_cast<std::size_t>(point.first)][static_cast<std::size_t>(point.second)] =
-            start;
+        streams_[static_cast<std::size_t>(point.row)][static_cast<std::size_t>(point.col)] = start;
     }
 }
 
 // Greedy one-step forward trace: extend src's streamline to dest, or merge the
 // two streamlines if dest is already claimed. Not thread-safe -- callers are
-// responsible for calling this sequentially (see neighborInVectorDirection for
+// responsible for calling this sequentially (see downstreamCell for
 // the parallel-safe read step).
-void FieldGrid::traceStreamlineStep(std::pair<int, int> src, std::pair<int, int> dest) {
+void FieldGrid::traceStreamlineStep(Vector::GridCell src, Vector::GridCell dest) {
     auto& srcStream =
-        streams_[static_cast<std::size_t>(src.first)][static_cast<std::size_t>(src.second)];
+        streams_[static_cast<std::size_t>(src.row)][static_cast<std::size_t>(src.col)];
     if (srcStream == nullptr) {
         srcStream = std::make_shared<Vector::Streamline>(src);
     }
 
     auto& destStream =
-        streams_[static_cast<std::size_t>(dest.first)][static_cast<std::size_t>(dest.second)];
+        streams_[static_cast<std::size_t>(dest.row)][static_cast<std::size_t>(dest.col)];
     if (destStream == nullptr) {
         // Destination is unclaimed: extend the source's streamline into it.
         destStream = srcStream;
@@ -70,9 +68,9 @@ void FieldGrid::traceStreamlineStep(std::pair<int, int> src, std::pair<int, int>
     }
 }
 
-std::vector<std::vector<std::pair<int, int>>> FieldGrid::getStreamlines() const {
+std::vector<Vector::Path> FieldGrid::getStreamlines() const {
     std::unordered_set<Vector::Streamline*> seen;
-    std::vector<std::vector<std::pair<int, int>>> result;
+    std::vector<Vector::Path> result;
     for (const auto& row : streams_) {
         for (const auto& cell : row) {
             if (cell && seen.insert(cell.get()).second) {

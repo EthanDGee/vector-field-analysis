@@ -31,10 +31,10 @@ from scipy.interpolate import RegularGridInterpolator
 
 def load(path):
     with h5py.File(path, "r") as f:
-        grp = f["field"]
-        vx = grp["vx"][:]  # (steps, height, width)
-        vy = grp["vy"][:]
-        attrs = dict(grp.attrs)
+        fieldGroup = f["field"]
+        vx = fieldGroup["vx"][:]  # (steps, height, width)
+        vy = fieldGroup["vy"][:]
+        attrs = dict(fieldGroup.attrs)
     return vx, vy, attrs
 
 
@@ -44,19 +44,19 @@ def load_streams(path):
     Returns a list (one entry per time step) of lists of arrays. Each array
     has shape (path_len, 2) with integer (row, col) grid indices.
     """
-    all_steps = []
+    streamlines_by_step = []
     with h5py.File(path, "r") as f:
-        grp = f["streams"]
-        num_steps = int(grp.attrs["num_steps"])
+        streamsGroup = f["streams"]
+        num_steps = int(streamsGroup.attrs["num_steps"])
         for s in range(num_steps):
-            step_grp = grp[f"step_{s}"]
-            flat = step_grp["paths_flat"][:]   # (N, 2) int32
-            offsets = step_grp["offsets"][:]   # (S+1,) int32
+            stepGroup = streamsGroup[f"step_{s}"]
+            flat = stepGroup["paths_flat"][:]   # (N, 2) int32
+            offsets = stepGroup["offsets"][:]   # (S+1,) int32
             streamlines = []
             for i in range(len(offsets) - 1):
                 streamlines.append(flat[offsets[i]:offsets[i + 1]])
-            all_steps.append(streamlines)
-    return all_steps
+            streamlines_by_step.append(streamlines)
+    return streamlines_by_step
 
 
 def make_grid(vx, vy, attrs, stride):
@@ -69,14 +69,14 @@ def make_grid(vx, vy, attrs, stride):
     return X, Y, steps
 
 
-def speed(vx_s, vy_s):
-    return np.sqrt(vx_s**2 + vy_s**2)
+def speed(vx_step, vy_step):
+    return np.sqrt(vx_step**2 + vy_step**2)
 
 
 def precompute_quiver_data(vx, vy, attrs, stride):
     """Pre-compute the quiver inputs for every step.
 
-    X, Y are constant across steps; vx_s/vy_s/mag are per-step numpy arrays.
+    X, Y are constant across steps; vx_step/vy_step/mag are per-step numpy arrays.
     Returns (X, Y, vx_all, vy_all, mag_all) where *_all[s] is step s's data.
     """
     X, Y, steps = make_grid(vx, vy, attrs, stride)
@@ -97,18 +97,18 @@ def _integrate_step(streamlines_step, vx_step, vy_step, xMin, xMax, yMin, yMax):
     x_grid = np.linspace(xMin, xMax, width)
     y_grid = np.linspace(yMin, yMax, height)
 
-    interp_u = RegularGridInterpolator(
+    interp_vyx = RegularGridInterpolator(
         (y_grid, x_grid), vx_step, method="linear",
         bounds_error=False, fill_value=0.0,
     )
-    interp_v = RegularGridInterpolator(
+    interp_vy = RegularGridInterpolator(
         (y_grid, x_grid), vy_step, method="linear",
         bounds_error=False, fill_value=0.0,
     )
 
     def field(t, state):
         pt = np.array([[state[1], state[0]]])  # (y, x) for RegularGridInterpolator
-        return [float(interp_u(pt)[0]), float(interp_v(pt)[0])]
+        return [float(interp_vyx(pt)[0]), float(interp_vy(pt)[0])]
 
     def field_bwd(t, state):
         fwd = field(t, state)
@@ -182,7 +182,7 @@ def _cache_is_valid(cache_path, *input_paths):
     return all(os.path.getmtime(p) <= cache_mtime for p in input_paths)
 
 
-def precompute_stream_curves(streamlines_all, vx, vy, attrs, workers=None,
+def precompute_stream_curves(streamlines_by_step, vx, vy, attrs, workers=None,
                              field_path=None, streams_path=None):
     """Pre-compute RK45 curves for all steps in parallel, with disk caching.
 
@@ -209,12 +209,12 @@ def precompute_stream_curves(streamlines_all, vx, vy, attrs, workers=None,
     yMin = float(attrs.get("yMin", -1))
     yMax = float(attrs.get("yMax", 1))
 
-    num_steps = len(streamlines_all)
+    num_steps = len(streamlines_by_step)
     nworkers = min(workers or os.cpu_count() or 1, num_steps)
     print(f"Pre-computing streamlines: {num_steps} steps, {nworkers} workers...", flush=True)
 
     args = [
-        (streamlines_all[s], vx[s], vy[s], xMin, xMax, yMin, yMax)
+        (streamlines_by_step[s], vx[s], vy[s], xMin, xMax, yMin, yMax)
         for s in range(num_steps)
     ]
 
@@ -270,19 +270,19 @@ def plot_step(ax, vx, vy, attrs, stride, step, curves=None, arrows=None,
               quiver_data=None):
     if quiver_data is not None:
         X, Y, vx_all, vy_all, mag_all = quiver_data
-        vx_s, vy_s, mag = vx_all[step], vy_all[step], mag_all[step]
+        vx_step, vy_step, mag = vx_all[step], vy_all[step], mag_all[step]
     else:
-        vx_s = vx[step, ::stride, ::stride]
-        vy_s = vy[step, ::stride, ::stride]
+        vx_step = vx[step, ::stride, ::stride]
+        vy_step = vy[step, ::stride, ::stride]
         X, Y, _ = make_grid(vx, vy, attrs, stride)
-        mag = speed(vx_s, vy_s)
+        mag = speed(vx_step, vy_step)
     ax.clear()
     # plasma is perceptually uniform, making speed differences easier to read
     # than with non-uniform colormaps like rainbow or jet.
     # scale=None lets matplotlib auto-scale arrow lengths to the data range,
     # preventing arrows from being invisible or overflowing the axes when
     # field magnitudes vary across steps.
-    q = ax.quiver(X, Y, vx_s, vy_s, mag, cmap="plasma", pivot="mid", scale=None)
+    q = ax.quiver(X, Y, vx_step, vy_step, mag, cmap="plasma", pivot="mid", scale=None)
     if curves is not None:
         draw_loaded_streams(ax, curves[step], arrows[step])
     field_type = attrs.get("type", "unknown")

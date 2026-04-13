@@ -41,18 +41,55 @@ class Vec2 {
 // axis-aligned grid structure where near-parallel vectors dominate.
 [[nodiscard]] bool almostParallel(const Vec2& a, const Vec2& b);
 
-// A single time-step snapshot of a 2D vector field. Layout: slice[row][col].
-using FieldSlice = std::vector<std::vector<Vec2>>;
+// A grid cell identified by its row and column index.
+struct GridCell {
+    int row = 0;
+    int col = 0;
 
-// A time series of 2D vector field snapshots with physical-space bounds.
-// Layout: steps[step][row][col]. xMin/xMax/yMin/yMax are physical-space
-// bounds, not grid indices.
-struct FieldTimeSeries {
-    std::vector<FieldSlice> steps;
+    bool operator==(const GridCell& other) const {
+        return row == other.row && col == other.col;
+    }
+    bool operator!=(const GridCell& other) const { return !(*this == other); }
+    bool operator<(const GridCell& other) const {
+        return row != other.row ? row < other.row : col < other.col;
+    }
+};
+
+// Ordered sequence of grid cells tracing a path through the field.
+using Path = std::vector<GridCell>;
+
+// Physical-space bounds of the vector field domain.
+struct FieldBounds {
     float xMin = 0.0f;
     float xMax = 0.0f;
     float yMin = 0.0f;
     float yMax = 0.0f;
+};
+
+// Integer dimensions of a 2D grid (width = columns, height = rows).
+struct GridSize {
+    int width  = 0;
+    int height = 0;
+};
+
+// A single time-step snapshot of a 2D vector field. Layout: slice[row][col].
+using FieldSlice = std::vector<std::vector<Vec2>>;
+
+// A time series of 2D vector field snapshots with physical-space bounds.
+// Layout: steps[step][row][col].
+struct FieldTimeSeries {
+    std::vector<FieldSlice> steps;
+    FieldBounds extents;
+
+    // Returns the grid dimensions derived from the first step.
+    // Returns {0, 0} if the series is empty.
+    [[nodiscard]] GridSize gridSize() const {
+        if (steps.empty() || steps[0].empty()) {
+            return {};
+        }
+        return {static_cast<int>(steps[0][0].size()),
+                static_cast<int>(steps[0].size())};
+    }
 };
 
 } // namespace Vector

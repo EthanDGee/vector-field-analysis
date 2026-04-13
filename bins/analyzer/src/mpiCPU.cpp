@@ -15,7 +15,7 @@
 void MpiCPU::computeTimeStep(VectorField::FieldGrid& grid) {
 #ifdef USE_MPI
     // Each (src, dest) pair is packed as four ints: srcRow, srcCol, destRow, destCol.
-    static constexpr int kTupleSize = 4;
+    static constexpr std::size_t kTupleSize = 4;
 
     // Fall back to sequential if MPI was not initialised (e.g. in unit tests).
     int mpiReady = 0;
@@ -55,17 +55,16 @@ void MpiCPU::computeTimeStep(VectorField::FieldGrid& grid) {
     const int localRows = endRow - startRow;
 
     // Pass 1 (parallel): each rank reads neighbor directions for its row range.
-    // neighborInVectorDirection is const and reads no mutable state -- concurrent
+    // downstreamCell is const and reads no mutable state -- concurrent
     // calls across disjoint row ranges are race-free.
-    const auto kTS = static_cast<std::size_t>(kTupleSize);
     // Guard size_t overflow before computing localCount.
     if (colCount > 0 &&
         static_cast<std::size_t>(localRows) >
-            std::numeric_limits<std::size_t>::max() / kTS / static_cast<std::size_t>(colCount)) {
+            std::numeric_limits<std::size_t>::max() / kTupleSize / static_cast<std::size_t>(colCount)) {
         throw std::overflow_error("grid too large for MPI gather (size_t overflow)");
     }
     const auto localCount =
-        static_cast<std::size_t>(localRows) * static_cast<std::size_t>(colCount) * kTS;
+        static_cast<std::size_t>(localRows) * static_cast<std::size_t>(colCount) * kTupleSize;
     if (localCount > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
         throw std::overflow_error("localCount exceeds INT_MAX; grid too large for MPI gather");
     }
@@ -76,8 +75,8 @@ void MpiCPU::computeTimeStep(VectorField::FieldGrid& grid) {
             const auto cellIdx =
                 (static_cast<std::size_t>(row - startRow) * static_cast<std::size_t>(colCount)) +
                 static_cast<std::size_t>(col);
-            const std::size_t base = cellIdx * kTS;
-            auto [destRow, destCol] = grid.neighborInVectorDirection(row, col);
+            const std::size_t base = cellIdx * kTupleSize;
+            auto [destRow, destCol] = grid.downstreamCell(row, col);
             localData[base + 0] = row;
             localData[base + 1] = col;
             localData[base + 2] = destRow;
@@ -117,9 +116,9 @@ void MpiCPU::computeTimeStep(VectorField::FieldGrid& grid) {
     // traceStreamlineStep writes to streams_ and is not thread-safe, so this must be
     // sequential.  Only rank 0 has the full allData, so only rank 0 does this pass.
     if (rank == 0) {
-        const std::size_t totalPairs = allData.size() / kTS;
+        const std::size_t totalPairs = allData.size() / kTupleSize;
         for (std::size_t i = 0; i < totalPairs; i++) {
-            const std::size_t base = i * kTS;
+            const std::size_t base = i * kTupleSize;
             grid.traceStreamlineStep({allData[base + 0], allData[base + 1]},
                                      {allData[base + 2], allData[base + 3]});
         }

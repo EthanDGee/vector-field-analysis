@@ -14,8 +14,8 @@ namespace AnalyzerConfigParser {
 namespace {
 
 void validateSolver(const std::string& name) {
-    for (const auto sv : kValidSolvers) {
-        if (name == sv) {
+    for (const auto solverName : kValidSolvers) {
+        if (name == solverName) {
             return;
         }
     }
