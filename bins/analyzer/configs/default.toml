@@ -1,0 +1,9 @@
+# default.toml
+# Benchmark all implementations against the generated field.
+#
+# Run: analyzer bins/analyzer/configs/default.toml
+
+[analyzer]
+input   = "field.h5"
+solver  = "all"
+threads = 0          # 0 = hardware_concurrency

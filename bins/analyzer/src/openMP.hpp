@@ -1,7 +1,7 @@
 #pragma once
-#include "vectorField.hpp"
-namespace openMP {
+#include "streamlineSolver.hpp"
 
-void computeTimeStep(VectorField::FieldGrid& field);
-
-}
+class OpenMP : public StreamlineSolver {
+  public:
+    void computeTimeStep(VectorField::FieldGrid& grid) override;
+};

@@ -1,3 +1,4 @@
+#include "mpiCPU.hpp"
 #include "openMP.hpp"
 #include "pthreads.hpp"
 #include "sequentialCPU.hpp"
@@ -40,66 +41,82 @@ TEST_CASE("traceStreamlineStep(src,dest) src pointing at itself is a no-op merge
 }
 
 // ---------------------------------------------------------------------------
-// sequentialCPU
+// SequentialCPU
 // ---------------------------------------------------------------------------
 
-TEST_CASE("sequentialCPU::computeTimeStep completes on uniform field", "[impl][sequential]") {
+TEST_CASE("SequentialCPU::computeTimeStep completes on uniform field", "[impl][sequential]") {
     auto grid = makeGrid();
-    REQUIRE_NOTHROW(sequentialCPU::computeTimeStep(grid));
+    REQUIRE_NOTHROW(SequentialCPU{}.computeTimeStep(grid));
 }
 
-TEST_CASE("sequentialCPU::computeTimeStep handles empty grid", "[impl][sequential]") {
+TEST_CASE("SequentialCPU::computeTimeStep handles empty grid", "[impl][sequential]") {
     auto grid = makeEmptyGrid();
-    REQUIRE_NOTHROW(sequentialCPU::computeTimeStep(grid));
+    REQUIRE_NOTHROW(SequentialCPU{}.computeTimeStep(grid));
 }
 
 // ---------------------------------------------------------------------------
-// pthreads
+// Pthreads
 // ---------------------------------------------------------------------------
 
-TEST_CASE("pthreads::computeTimeStep zero threads returns early", "[impl][pthreads]") {
+TEST_CASE("Pthreads zero threads returns early", "[impl][pthreads]") {
     auto grid = makeGrid();
-    REQUIRE_NOTHROW(pthreads::computeTimeStep(grid, 0));
+    REQUIRE_NOTHROW(Pthreads{0}.computeTimeStep(grid));
 }
 
-TEST_CASE("pthreads::computeTimeStep single thread", "[impl][pthreads]") {
+TEST_CASE("Pthreads single thread", "[impl][pthreads]") {
     auto grid = makeGrid();
-    REQUIRE_NOTHROW(pthreads::computeTimeStep(grid, 1));
+    REQUIRE_NOTHROW(Pthreads{1}.computeTimeStep(grid));
 }
 
-TEST_CASE("pthreads::computeTimeStep two threads", "[impl][pthreads]") {
+TEST_CASE("Pthreads two threads", "[impl][pthreads]") {
     auto grid = makeGrid();
-    REQUIRE_NOTHROW(pthreads::computeTimeStep(grid, 2));
+    REQUIRE_NOTHROW(Pthreads{2}.computeTimeStep(grid));
 }
 
-TEST_CASE("pthreads::computeTimeStep more threads than rows", "[impl][pthreads]") {
+TEST_CASE("Pthreads more threads than rows", "[impl][pthreads]") {
     // 3-row grid, 8 threads: most threads get empty ranges, last gets all rows
     auto grid = makeGrid();
-    REQUIRE_NOTHROW(pthreads::computeTimeStep(grid, 8));
+    REQUIRE_NOTHROW(Pthreads{8}.computeTimeStep(grid));
 }
 
-TEST_CASE("pthreads::computeTimeStep empty grid returns early", "[impl][pthreads]") {
+TEST_CASE("Pthreads empty grid returns early", "[impl][pthreads]") {
     auto grid = makeEmptyGrid();
-    REQUIRE_NOTHROW(pthreads::computeTimeStep(grid, 4));
+    REQUIRE_NOTHROW(Pthreads{4}.computeTimeStep(grid));
 }
 
 // ---------------------------------------------------------------------------
-// openMP
+// OpenMP
 // ---------------------------------------------------------------------------
 
-TEST_CASE("openMP::computeTimeStep completes on uniform field", "[impl][openmp]") {
+TEST_CASE("OpenMP::computeTimeStep completes on uniform field", "[impl][openmp]") {
     auto grid = makeGrid();
-    REQUIRE_NOTHROW(openMP::computeTimeStep(grid));
+    REQUIRE_NOTHROW(OpenMP{}.computeTimeStep(grid));
 }
 
-TEST_CASE("openMP::computeTimeStep handles empty grid", "[impl][openmp]") {
+TEST_CASE("OpenMP::computeTimeStep handles empty grid", "[impl][openmp]") {
     auto grid = makeEmptyGrid();
-    REQUIRE_NOTHROW(openMP::computeTimeStep(grid));
+    REQUIRE_NOTHROW(OpenMP{}.computeTimeStep(grid));
 }
 
 // ---------------------------------------------------------------------------
-// Consistency: all three impls produce the same number of neighbor steps
-// (verified by re-running neighborInVectorDirection and comparing outputs)
+// MpiCPU
+// ---------------------------------------------------------------------------
+
+// MpiCPU falls back to SequentialCPU when compiled without USE_MPI or run with
+// a single rank.  These tests exercise the single-rank / no-MPI path.
+
+TEST_CASE("MpiCPU::computeTimeStep completes on uniform field", "[impl][mpi]") {
+    auto grid = makeGrid();
+    REQUIRE_NOTHROW(MpiCPU{}.computeTimeStep(grid));
+}
+
+TEST_CASE("MpiCPU::computeTimeStep handles empty grid", "[impl][mpi]") {
+    auto grid = makeEmptyGrid();
+    REQUIRE_NOTHROW(MpiCPU{}.computeTimeStep(grid));
+}
+
+// ---------------------------------------------------------------------------
+// Consistency: all impls agree on neighbor directions for uniform field
 // ---------------------------------------------------------------------------
 
 TEST_CASE("all impls agree on neighbor directions for uniform field", "[impl][consistency]") {

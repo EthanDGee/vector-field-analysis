@@ -1,6 +1,7 @@
 #pragma once
-#include "vectorField.hpp"
-namespace sequentialCPU {
+#include "streamlineSolver.hpp"
 
-void computeTimeStep(VectorField::FieldGrid& timeStep);
-} // namespace sequentialCPU
+class SequentialCPU : public StreamlineSolver {
+  public:
+    void computeTimeStep(VectorField::FieldGrid& grid) override;
+};

@@ -53,3 +53,8 @@ build-sanitize/
 # IDE / tooling
 .cache/
 compile_commands.json
+
+# Local environment
+.env
+logs/
+output/

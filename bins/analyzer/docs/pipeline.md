@@ -1,0 +1,134 @@
+# Analyzer Pipeline
+
+The analyzer runs three stages: read the config, read the field, compute streamlines.
+
+```
+config.toml
+    |
+    v
++--------------------+     AnalyzerConfig
+| AnalyzerConfigParser| --------------------+
++--------------------+                     |
+                                           v
+                           +--------------------+     FieldTimeSeries
+                           |    FieldReader     | --------------------+
+                           +--------------------+                     |
+                                                                      v
+                                                        +---------------------------+
+                                                        | StreamlineSolver::        |
+                                                        |   computeTimeStep(grid)   |
+                                                        | (per time step)           |
+                                                        +---------------------------+
+                                                                      |
+                                                                      v
+                                                              FieldGrid (streamlines)
+```
+
+---
+
+## Stage 1: AnalyzerConfigParser
+
+**Source:** `analyzerConfigParser.hpp`, `analyzerConfigParser.cpp`
+
+Reads a TOML file using toml++ and produces an `AnalyzerConfig` struct.
+
+```
+AnalyzerConfig
+  +-- inputPath   (HDF5 file to read)
+  +-- solver      ("sequential" | "openmp" | "pthreads" | "mpi" | "all")
+  +-- threadCount (pthreads thread count; 0 = hardware_concurrency)
+```
+
+---
+
+## Stage 2: FieldReader
+
+**Source:** `fieldReader.hpp`, `fieldReader.cpp`
+
+Reads the HDF5 file produced by the simulator into a `Vector::FieldTimeSeries`.
+
+```
+FieldTimeSeries
+  +-- xMin, xMax, yMin, yMax   (physical domain bounds)
+  +-- steps: []FieldSlice      (one slice per time step)
+        +-- [row][col]: Vec2   (vx, vy at each grid cell)
+```
+
+---
+
+## Stage 3: Streamline Computation
+
+**Source:** implementation files + `vectorField.hpp`
+
+For each time step:
+1. A `FieldGrid` is constructed from the slice and domain bounds.
+2. The selected `StreamlineSolver` calls `computeTimeStep(grid)`.
+3. Two-pass design shared by all implementations:
+
+   **Pass 1 (parallelisable)** — each cell calls `neighborInVectorDirection(row, col)`,
+   which returns the grid index of the nearest cell in the direction the vector points.
+   This method is `const` and reads no mutable state, so it is safe to call concurrently.
+
+   **Pass 2 (sequential)** — `traceStreamlineStep(src, dest)` is called for each
+   `(src, dest)` pair. It writes to `streams_` (shared mutable state) and is not
+   thread-safe.
+
+### `neighborInVectorDirection(row, col)`
+
+Maps the vector at `(row, col)` to a grid offset: the x-component advances the column
+index, the y-component advances the row index. The result is clamped to grid bounds.
+
+### `traceStreamlineStep(src, dest)`
+
+1. If `src` has no streamline, creates one.
+2. If `dest` has no streamline, assigns it to `src`'s streamline (extend the path).
+3. If `dest` already belongs to a different streamline, merges via `joinStreamlines`.
+
+### `joinStreamlines(start, end)`
+
+Absorbs `end`'s path into `start`. All grid entries that pointed to `end` are
+redirected to `start`.
+
+---
+
+## Implementations
+
+### `SequentialCPU`
+
+Single loop over all `(row, col)` pairs; both passes merged into one sequential scan.
+
+### `OpenMP`
+
+- Pass 1: `#pragma omp parallel for collapse(2)` over all cells.
+- Pass 2: sequential.
+
+### `Pthreads`
+
+- Pass 1: row range partitioned across `threadCount` pthreads.
+- Pass 2: sequential on the calling thread after `pthread_join`.
+
+### `MpiCPU`
+
+- All ranks read the field file independently (shared filesystem on CHPC/Lustre).
+- Pass 1: each rank computes neighbor pairs for its assigned row range.
+- `MPI_Gatherv` collects all pairs on rank 0.
+- Pass 2: sequential on rank 0 only.
+- Single-rank run falls back to `SequentialCPU` (no communication overhead).
+
+---
+
+## Source File Map
+
+| File | Role |
+|------|------|
+| `main.cpp` | Entry point; orchestrates all stages |
+| `analyzerConfig.hpp` | `AnalyzerConfig` struct definition |
+| `analyzerConfigParser.hpp/.cpp` | Parses TOML into `AnalyzerConfig` |
+| `streamlineSolver.hpp` | Abstract `StreamlineSolver` base class |
+| `solverFactory.hpp/.cpp` | Factory: name → `std::unique_ptr<StreamlineSolver>` |
+| `fieldReader.hpp/.cpp` | Reads HDF5 into `FieldTimeSeries` |
+| `vectorField.hpp/.cpp` | `FieldGrid` owns the streamline state |
+| `sequentialCPU.hpp/.cpp` | Single-threaded reference implementation |
+| `openMP.hpp/.cpp` | OpenMP shared-memory implementation |
+| `pthreads.hpp/.cpp` | Pthreads shared-memory implementation |
+| `mpiCPU.hpp/.cpp` | MPI distributed-memory CPU implementation |

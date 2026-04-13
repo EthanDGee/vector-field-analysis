@@ -1,8 +1,11 @@
 #pragma once
-#include "vectorField.hpp"
+#include "streamlineSolver.hpp"
 
-namespace pthreads {
+class Pthreads : public StreamlineSolver {
+    unsigned int threadCount_;
 
-void computeTimeStep(VectorField::FieldGrid& field, unsigned int threadCount);
+  public:
+    explicit Pthreads(unsigned int threadCount);
 
-} // namespace pthreads
+    void computeTimeStep(VectorField::FieldGrid& grid) override;
+};
