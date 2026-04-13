@@ -29,7 +29,7 @@ namespace cuda {
       }
     }
 
-    // clamp header for device code
+    // clamp helper for device code
     __device__ int clampInt(int value, int lo, int hi) {
       return value < lo ? lo : (value > hi ? hi : value);
     }
