@@ -189,7 +189,7 @@ static void runOne(const std::string& solverName, const Vector::FieldTimeSeries&
 
     if (mpiRank == 0) {
         std::string label = solverName;
-        if (solverName == "pthreads") {
+        if (solverName == "openmp" || solverName == "pthreads") {
             label += " (" + std::to_string(threadCount) + " thr)";
         } else if (solverName == "mpi") {
             label += " (" + std::to_string(mpiSize) + " rank(s))";
@@ -237,7 +237,6 @@ int main(int argc, char* argv[]) {
 
     try {
         const AnalyzerConfig config = AnalyzerConfigParser::parseFile(argv[1]);
-        const unsigned int threadCount = resolveThreadCount(config.threadCount);
         const Vector::FieldTimeSeries field = FieldReader::read(config.inputPath);
         // Use the TOML output path if set; otherwise derive from the input field path.
         const std::string outPath =
@@ -247,15 +246,19 @@ int main(int argc, char* argv[]) {
             throw std::runtime_error("field file contains no time steps: " + config.inputPath);
         }
 
+        // Resolve thread count from config, then adapt for fair comparison in "all" mode:
+        // if MPI is active, align thread count to rank count so every parallel solver
+        // (openmp, pthreads, mpi) works with the same number of workers.
+        unsigned int threadCount = resolveThreadCount(config.threadCount);
+        if (config.solver == "all" && mpiSize > 1) {
+            threadCount = static_cast<unsigned int>(mpiSize);
+        }
+
         if (mpiRank == 0) {
             const int numSteps = static_cast<int>(field.steps.size());
             const auto [width, height] = field.gridSize();
             std::cout << "Field: " << config.inputPath << "  " << width << "x" << height << "  "
-                      << numSteps << " step(s)";
-            if (mpiSize > 1) {
-                std::cout << "  MPI ranks: " << mpiSize;
-            }
-            std::cout << "\n\n";
+                      << numSteps << " step(s)\n\n";
         }
 
         if (config.solver == "all") {
