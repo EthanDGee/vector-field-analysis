@@ -72,11 +72,12 @@ TEST_CASE("StreamWriter::write() step_1 offsets and point count", "[streamwriter
     std::filesystem::remove(path, ec);
 }
 
-TEST_CASE("StreamWriter::write() throws if output file already exists", "[streamwriter]") {
-    const auto path = std::filesystem::temp_directory_path() / "test_sw_excl.h5";
+TEST_CASE("StreamWriter::write() overwrites existing output file", "[streamwriter]") {
+    const auto path = std::filesystem::temp_directory_path() / "test_sw_overwrite.h5";
     writeFixture(path);
     std::vector<StepStreamlines> allSteps = {{}};
-    REQUIRE_THROWS(StreamWriter::write(path.string(), allSteps, 0.0f, 1.0f, 0.0f, 1.0f, 2, 2));
+    // Truncate mode: re-writing to an existing path must succeed, not throw.
+    REQUIRE_NOTHROW(StreamWriter::write(path.string(), allSteps, 0.0f, 1.0f, 0.0f, 1.0f, 2, 2));
     std::error_code ec;
     std::filesystem::remove(path, ec);
 }

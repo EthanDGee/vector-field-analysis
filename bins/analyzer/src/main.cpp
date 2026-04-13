@@ -138,11 +138,11 @@ static void runAll(const Vector::FieldTimeSeries& data, unsigned int threadCount
         std::cout << std::left
                   << std::setw(w) << seqLabel << seqR.ms << " ms\n"
                   << std::setw(w) << ompLabel << ompR.ms << " ms"
-                  << "  (" << seqR.ms / ompR.ms << "x vs sequential)\n"
+                  << "  (" << (ompR.ms > 0 ? seqR.ms / ompR.ms : 0.0) << "x vs sequential)\n"
                   << std::setw(w) << ptLabel  << ptR.ms  << " ms"
-                  << "  (" << seqR.ms / ptR.ms  << "x vs sequential)\n"
+                  << "  (" << (ptR.ms  > 0 ? seqR.ms / ptR.ms  : 0.0) << "x vs sequential)\n"
                   << std::setw(w) << mpiLabel << mpiR.ms << " ms"
-                  << "  (" << seqR.ms / mpiR.ms << "x vs sequential)\n";
+                  << "  (" << (mpiR.ms > 0 ? seqR.ms / mpiR.ms : 0.0) << "x vs sequential)\n";
 
         verify(seqR.streams, ompR.streams, "openmp");
         verify(seqR.streams, ptR.streams, "pthreads");
@@ -221,6 +221,10 @@ int main(int argc, char* argv[]) {
         const AnalyzerConfig config = AnalyzerConfigParser::parseFile(argv[1]);
         const unsigned int threadCount = resolveThreadCount(config.threadCount);
         const Vector::FieldTimeSeries data = FieldReader::read(config.inputPath);
+
+        if (data.steps.empty()) {
+            throw std::runtime_error("field file contains no time steps: " + config.inputPath);
+        }
 
         if (mpiRank == 0) {
             const int numSteps = static_cast<int>(data.steps.size());

@@ -14,9 +14,10 @@ namespace AnalyzerConfigParser {
 namespace {
 
 void validateSolver(const std::string& name) {
-    if (name == "sequential" || name == "openmp" || name == "pthreads" || name == "mpi" ||
-        name == "all") {
-        return;
+    for (const auto sv : kValidSolvers) {
+        if (name == sv) {
+            return;
+        }
     }
     throw std::runtime_error("Unknown solver: \"" + name +
                              "\". Must be sequential, openmp, pthreads, mpi, or all.");

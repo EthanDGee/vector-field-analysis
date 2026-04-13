@@ -4,6 +4,7 @@
 
 #ifdef USE_MPI
 #include <algorithm>
+#include <iostream>
 #include <limits>
 #include <mpi.h>
 #include <stdexcept>
@@ -20,6 +21,8 @@ void MpiCPU::computeTimeStep(VectorField::FieldGrid& grid) {
     int mpiReady = 0;
     MPI_Initialized(&mpiReady);
     if (mpiReady == 0) {
+        std::cerr << "Warning: MpiCPU::computeTimeStep called without MPI_Init; "
+                     "falling back to sequential.\n";
         SequentialCPU fallback;
         fallback.computeTimeStep(grid);
         return;
@@ -83,20 +86,19 @@ void MpiCPU::computeTimeStep(VectorField::FieldGrid& grid) {
     }
 
     // Gather per-rank element counts to root.
-    // recvCounts/displs are only allocated on rank 0; non-root passes nullptr
-    // which is valid per MPI spec (recvbuf/recvcounts/displs ignored on non-root).
-    std::vector<int> recvCounts;
-    if (rank == 0) {
-        recvCounts.resize(static_cast<std::size_t>(size), 0);
-    }
+    // Always allocate recvCounts on all ranks so .data() is never null; some MPI
+    // implementations warn or assert on null recvbuf even when the argument is
+    // formally ignored on non-root.
+    std::vector<int> recvCounts(static_cast<std::size_t>(size), 0);
     MPI_Gather(&localCountInt, 1, MPI_INT,
-               rank == 0 ? recvCounts.data() : nullptr, 1, MPI_INT, 0, MPI_COMM_WORLD);
+               recvCounts.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-    // Build displacements and receive buffer on rank 0.
-    std::vector<int> displs;
-    std::vector<int> allData;
+    // Build displacements and receive buffer.
+    // Root allocates real buffers; non-root gets 1-element dummies so .data()
+    // is non-null for MPI_Gatherv (same portability reason as above).
+    std::vector<int> displs(rank == 0 ? static_cast<std::size_t>(size) : 1, 0);
+    std::vector<int> allData(1);
     if (rank == 0) {
-        displs.resize(static_cast<std::size_t>(size), 0);
         for (int i = 1; i < size; i++) {
             displs[static_cast<std::size_t>(i)] = displs[static_cast<std::size_t>(i - 1)] +
                                                   recvCounts[static_cast<std::size_t>(i - 1)];
@@ -107,8 +109,7 @@ void MpiCPU::computeTimeStep(VectorField::FieldGrid& grid) {
     }
 
     // Gather all neighbor pairs to rank 0.
-    // MPI spec: recvcounts/displs/recvbuf are significant only at root.
-    // allData.data() and recvCounts.data() are nullptr on non-root (empty vectors) -- valid.
+    // recvcounts/displs/recvbuf are significant only at root per MPI spec.
     MPI_Gatherv(localData.data(), localCountInt, MPI_INT,
                 allData.data(), recvCounts.data(), displs.data(), MPI_INT, 0, MPI_COMM_WORLD);
 

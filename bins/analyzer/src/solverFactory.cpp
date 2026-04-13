@@ -10,6 +10,7 @@
 #include <string>
 #include <string_view>
 
+// Valid names mirror kValidSolvers in analyzerConfig.hpp — keep in sync when adding solvers.
 std::unique_ptr<StreamlineSolver> makeSolver(std::string_view name, unsigned int threadCount) {
     if (name == "sequential") {
         return std::make_unique<SequentialCPU>();

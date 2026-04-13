@@ -7,6 +7,7 @@ namespace StreamWriter {
 
 void write(const std::string& outPath, const std::vector<StepStreamlines>& allSteps, float xMin,
            float xMax, float yMin, float yMax, int width, int height) {
+    // Truncate: overwrite any existing file so reruns don't require manual cleanup.
     HighFive::File file(outPath, HighFive::File::Truncate);
     auto grp = file.createGroup("streams");
 
