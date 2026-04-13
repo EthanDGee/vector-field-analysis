@@ -1,7 +1,10 @@
 #pragma once
+
+#include "streamline.hpp"
 #include "vector.hpp"
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace VectorField {
@@ -10,7 +13,7 @@ namespace VectorField {
 // algorithm over it. Row index corresponds to the y-axis, col index to x.
 class FieldGrid {
     const float xMin, xMax, yMin, yMax;
-    std::vector<std::vector<Vector::Vec2>> field;
+    std::vector<std::vector<std::shared_ptr<Vector::Streamline>> streams_;
 
   public:
     FieldGrid(float xMin, float xMax, float yMin, float yMax,
@@ -20,11 +23,17 @@ class FieldGrid {
           yMin(yMin),
           yMax(yMax),
           field(std::move(field)) {
-            [[nodiscard]] float getXMin() const { return xMin; }
-            [[nodiscard]] float getXMan() const { return xMax; }
-            [[nodiscard]] float getYMin() const { return yMin; }
-            [[nodiscard]] float getYMax() const { return yMax; }
+            const std::size_t rows = this->field[0].size() : 0;
+            const std::size_t cols = rows > 0 ? this->field[0].size() : 0;
+            streams_.assign(rows, std::vector<std::shared_ptr<Vector::Streamline>>(cols, nullptr));
           }
+
+    // accessors for field bounds
+    // cuda uses these for computing row/col spacing
+    [[nodiscard]] float getXMin() const { return xMin; }
+    [[nodiscard]] float getXMax() const { return xMax; }
+    [[nodiscard]] float getYMin() const { return yMin; }
+    [[nodiscard]] float getYMax() const { return yMax; }
 
     // Returns the grid cell (row, col) that the vector at (row, col) points toward
     std::pair<int, int> neighborInVectorDirection(int row, int col);
