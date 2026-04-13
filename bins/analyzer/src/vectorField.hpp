@@ -19,7 +19,12 @@ class FieldGrid {
           xMax(xMax),
           yMin(yMin),
           yMax(yMax),
-          field(std::move(field)) {}
+          field(std::move(field)) {
+            [[nodiscard]] float getXMin() const { return xMin; }
+            [[nodiscard]] float getXMan() const { return xMax; }
+            [[nodiscard]] float getYMin() const { return yMin; }
+            [[nodiscard]] float getYMax() const { return yMax; }
+          }
 
     // Returns the grid cell (row, col) that the vector at (row, col) points toward
     std::pair<int, int> neighborInVectorDirection(int row, int col);
