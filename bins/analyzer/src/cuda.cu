@@ -1,4 +1,5 @@
 #include "cuda.hpp"
+
 #include <cuda_runtime.h>
 
 #include <cmath>
@@ -8,26 +9,34 @@
 
 namespace cuda {
   namespace {
+    // 2D vector representation
+    // host is flattened into this format before being copied to GPU
     struct DeviceVec2 {
       float x;
       float y;
     };
 
+    // destination coord for one cell
     struct DeviceCoord {
       int row;
       int col;
     }
     
+    // helper to turn cuda errors into cpp exceptions
     inline void cudaCheck(cudaError_t err, const char* what) {
       if (err != cudaSuccess) {
         throw std::runtime_error(std::string(what) + ": " + cudaGetErrorString(err));
       }
     }
 
+    // clamp header for device code
     __device__ int clampInt(int value, int lo, int hi) {
       return value < lo ? lo : (value > hi ? hi : value);
     }
 
+    // for each grid cell compute which neighboring cell its vector points to 
+    // kernel only computes destination coords
+    // does not update streamline objects directly
     __global__ void computeDestinationsKernel(const DeviceVec2* field, 
                                               int rows, 
                                               int cols, 
@@ -82,10 +91,11 @@ namespace cuda {
 
     const int total = rows * cols;
 
+    // flatten 2D field into 1D array
     std::vector<DeviceVec2> hostField(static_cast<std::size_t>(total));
     for (int row = 0; row < rows; ++row) {
       for (int col = 0; col < cols; ++col) {
-        const auto& v = grid.field[static_cast<std::size_t>(row * cols + col)] = DeviceVec2{v.x, v.y};
+        const auto& v = grid.field[static_cast<std::size_t>(row)][static_cast<std::size_t>(col)];
         hostField[static_cast<std::size_t>(row * cols + col)] = DeviceVec2{v.x, v.y};
       }
     }
@@ -111,7 +121,10 @@ namespace cuda {
 
     computeDestinationsKernel<<<gridSize, blockSize>>>(
         dField, rows, cols, 
-        0.0f, 0.0f, 0.0f, 0.0f, //placeholder
+        grid.getXMin(),
+        grid.getXMax(),
+        grid.getYMin(),
+        grid.getYMax(),
         dDests);
 
     cudaCheck(cudaGetLastError(), "kernel launch");
