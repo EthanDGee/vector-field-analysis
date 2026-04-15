@@ -531,8 +531,7 @@ TEST_CASE("FieldWriter::write() creates the HDF5 file", "[simulator][writer]") {
     std::error_code ec;
     std::filesystem::remove(tmpPath, ec);
 
-    FieldWriter::write(outPath, generateTimeSeries(config), "vortex", config.dt,
-                       config.viscosity);
+    FieldWriter::write(outPath, generateTimeSeries(config), "vortex", config.dt, config.viscosity);
 
     REQUIRE(std::filesystem::exists(tmpPath));
     std::filesystem::remove(tmpPath, ec);
@@ -546,8 +545,7 @@ TEST_CASE("FieldWriter::write() stores vx/vy with correct dimensions [steps][hei
     const auto tmpPath = std::filesystem::temp_directory_path() / "test_fw_dims.h5";
     const std::string outPath = tmpPath.string();
 
-    FieldWriter::write(outPath, generateTimeSeries(config), "vortex", config.dt,
-                       config.viscosity);
+    FieldWriter::write(outPath, generateTimeSeries(config), "vortex", config.dt, config.viscosity);
 
     const HighFive::File file(tmpPath.string(), HighFive::File::ReadOnly);
     const auto group = file.getGroup("field");
@@ -569,8 +567,7 @@ TEST_CASE("FieldWriter::write() stores correct metadata attributes", "[simulator
     const auto tmpPath = std::filesystem::temp_directory_path() / "test_fw_attrs.h5";
     const std::string outPath = tmpPath.string();
 
-    FieldWriter::write(outPath, generateTimeSeries(config), "vortex", config.dt,
-                       config.viscosity);
+    FieldWriter::write(outPath, generateTimeSeries(config), "vortex", config.dt, config.viscosity);
 
     const HighFive::File file(tmpPath.string(), HighFive::File::ReadOnly);
     const auto group = file.getGroup("field");
