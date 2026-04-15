@@ -8,7 +8,7 @@
 namespace {
 
 std::pair<std::size_t, std::size_t> calculateRowSplit(std::size_t rowCount,
-                                                       std::size_t partitionCount) {
+                                                      std::size_t partitionCount) {
     if (partitionCount == 0) {
         throw std::invalid_argument("partitionCount must be greater than 0");
     }
@@ -53,6 +53,9 @@ void PthreadsStreamlineSolver::computeTimeStep(Field::Grid& grid) {
         return;
     }
     const int colCount = static_cast<int>(grid.cols());
+    if (colCount == 0) {
+        return;
+    }
 
     // Pass 1: parallel -- compute all (src, dest) neighbor pairs.
     std::vector<Field::GridCell> neighbors(rowCount * static_cast<std::size_t>(colCount));
@@ -79,21 +82,26 @@ void PthreadsStreamlineSolver::computeTimeStep(Field::Grid& grid) {
         }
         currentRow += rowsPerThread;
 
-        const int err =
-            pthread_create(&threads[threadIndex], nullptr, computeNeighbors, &threadArgs[threadIndex]);
+        const int err = pthread_create(&threads[threadIndex], nullptr, computeNeighbors,
+                                       &threadArgs[threadIndex]);
         if (err != 0) {
             // Join all already-running threads before propagating the error so
             // they don't outlive threadArgs and neighbors.
             for (unsigned int j = 0; j < threadIndex; j++) {
                 pthread_join(threads[j], nullptr);
             }
-            throw std::runtime_error("pthread_create failed with error code " + std::to_string(err));
+            throw std::runtime_error("pthread_create failed with error code " +
+                                     std::to_string(err));
         }
     }
 
     for (unsigned int threadIndex = 0; threadIndex < threadCount_; threadIndex++) {
         const int err = pthread_join(threads[threadIndex], nullptr);
         if (err != 0) {
+            // Join remaining threads before propagating so they don't outlive threadArgs/neighbors.
+            for (unsigned int j = threadIndex + 1; j < threadCount_; j++) {
+                pthread_join(threads[j], nullptr);
+            }
             throw std::runtime_error("pthread_join failed with error code " + std::to_string(err));
         }
     }

@@ -17,7 +17,8 @@ GridCell Grid::downstreamCell(int row, int col) const {
         throw std::runtime_error("downstreamCell called on zero-width field");
     }
     if (rowCount == 1 || colCount == 1) {
-        // A 1-cell grid has no downstream direction; return the cell itself.
+        // A single-row or single-column grid cannot advance in that dimension; return the cell
+        // itself.
         return {row, col};
     }
 
@@ -32,11 +33,11 @@ GridCell Grid::downstreamCell(int row, int col) const {
     const float physRow = indexToCoord(row, rowCount, bounds_.yMin, bounds_.yMax);
     const float physCol = indexToCoord(col, colCount, bounds_.xMin, bounds_.xMax);
     const int nearestRow =
-        std::clamp(static_cast<int>(std::round((physRow + start.y - bounds_.yMin) / rowSpacing)),
-                   0, rowCount - 1);
+        std::clamp(static_cast<int>(std::round((physRow + start.y - bounds_.yMin) / rowSpacing)), 0,
+                   rowCount - 1);
     const int nearestCol =
-        std::clamp(static_cast<int>(std::round((physCol + start.x - bounds_.xMin) / colSpacing)),
-                   0, colCount - 1);
+        std::clamp(static_cast<int>(std::round((physCol + start.x - bounds_.xMin) / colSpacing)), 0,
+                   colCount - 1);
 
     return {nearestRow, nearestCol};
 }
@@ -47,13 +48,13 @@ GridCell Grid::downstreamCell(GridCell coords) const {
 
 void Grid::joinStreamlines(const std::shared_ptr<Streamline>& start,
                            const std::shared_ptr<Streamline>& end) {
-    if (!start || !end || start == end || start->path.empty()) {
+    if (!start || !end || start == end || start->getPath().empty()) {
         return;
     }
 
     // Absorb end's path into start and redirect all stream entries at those positions
-    for (const auto& point : end->path) {
-        start->path.push_back(point);
+    for (const auto& point : end->getPath()) {
+        start->appendPoint(point);
         streamlines_[static_cast<std::size_t>(point.row)][static_cast<std::size_t>(point.col)] =
             start;
     }
@@ -84,7 +85,7 @@ void Grid::traceStreamlineStep(GridCell src, GridCell dest) {
     if (destStream == nullptr) {
         // Destination is unclaimed: extend the source's streamline into it.
         destStream = srcStream;
-        srcStream->path.push_back(dest);
+        srcStream->appendPoint(dest);
     } else {
         // Destination already belongs to another streamline: the two lines
         // converge here, so merge them into one.
@@ -98,7 +99,7 @@ std::vector<Path> Grid::getStreamlines() const {
     for (const auto& row : streamlines_) {
         for (const auto& cell : row) {
             if (cell && seen.insert(cell.get()).second) {
-                result.push_back(cell->path);
+                result.push_back(cell->getPath());
             }
         }
     }

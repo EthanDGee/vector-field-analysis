@@ -3,16 +3,18 @@
 # requires-python = ">=3.11"
 # dependencies = ["h5py", "matplotlib", "numpy", "scipy"]
 # ///
-"""Visualize vector field .h5 files produced by the simulator.
+"""Visualize vector field output produced by the simulator.
 
 Usage:
-    python tools/visualize.py field.h5 [--step N] [--stride S] [--save out.gif]
-                                       [--streams field.streams.h5]
+    python tools/visualize.py <file> [--step N] [--stride S] [--save out.gif]
+                                     [--streams data/<name>/streams.h5]
+
+    <file>           path to field.h5 (e.g. data/accretion_disk/field.h5)
 
     --step N         show a single step N instead of animating (0-indexed)
     --stride S       subsample grid by S for less cluttered arrows (default: 4)
     --save FILE      save animation to a gif or mp4 instead of showing it
-    --streams FILE   overlay streamlines from an analyzer .streams.h5 file
+    --streams FILE   overlay streamlines from the analyzer output streams.h5
 """
 
 import argparse
@@ -188,7 +190,7 @@ def _integrate_step(streamlines_step, vx_step, vy_step, xMin, xMax, yMin, yMax):
 
 
 def _curve_cache_path(streams_path):
-    return streams_path + ".vis_cache.pkl"
+    return os.path.join(os.path.dirname(streams_path), "vis_cache.pkl")
 
 
 def _cache_is_valid(cache_path, *input_paths):
@@ -423,12 +425,24 @@ def animate(vx, vy, attrs, stride, save, streamlines=None, workers=None,
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Visualize simulator .h5 output.")
-    parser.add_argument("file", help="Path to .h5 file")
-    parser.add_argument("--step", type=int, default=None, help="Show single step")
-    parser.add_argument("--stride", type=int, default=4, help="Arrow subsampling (default: 4)")
-    parser.add_argument("--save", metavar="FILE", help="Save animation to gif/mp4")
-    parser.add_argument("--streams", metavar="FILE", help="Overlay streamlines from .streams.h5")
+    parser = argparse.ArgumentParser(
+        description="Visualize vector field output produced by the simulator.",
+        epilog="Examples:\n"
+               "  tools/visualize.py data/accretion_disk/field.h5\n"
+               "  tools/visualize.py data/accretion_disk/field.h5 --streams data/accretion_disk/streams.h5",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "file",
+        help="Path to the field HDF5 file (e.g. data/accretion_disk/field.h5).",
+    )
+    parser.add_argument("--step", type=int, default=None, help="Show single step (0-indexed)")
+    parser.add_argument("--stride", type=int, default=4, help="Arrow subsampling stride (default: 4)")
+    parser.add_argument("--save", metavar="FILE", help="Save animation to gif/mp4 instead of displaying")
+    parser.add_argument(
+        "--streams", metavar="FILE",
+        help="Overlay streamlines from analyzer output (e.g. data/<name>/streams.h5)",
+    )
     _default_workers = 4
     _env_val = os.environ.get("VISUALIZER_THREADS")
     if _env_val:
@@ -445,6 +459,8 @@ def main():
     )
     args = parser.parse_args()
 
+    field_path = args.file
+
     if args.stride < 1:
         print("Error: --stride must be >= 1", file=sys.stderr)
         sys.exit(1)
@@ -454,12 +470,12 @@ def main():
         sys.exit(1)
 
     try:
-        vx, vy, attrs = load(args.file)
+        vx, vy, attrs = load(field_path)
     except FileNotFoundError:
-        print(f"Error: file not found: {args.file}", file=sys.stderr)
+        print(f"Error: field file not found: {field_path}", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
-        print(f"Error reading {args.file}: {e}", file=sys.stderr)
+        print(f"Error reading {field_path}: {e}", file=sys.stderr)
         sys.exit(1)
 
     streamlines = None
@@ -474,7 +490,7 @@ def main():
             sys.exit(1)
 
     steps = vx.shape[0]
-    print(f"Loaded {args.file}: {vx.shape[2]}x{vx.shape[1]}, {steps} steps, "
+    print(f"Loaded {field_path}: {vx.shape[2]}x{vx.shape[1]}, {steps} steps, "
           f"type={attrs.get('type', 'unknown')}")
     if streamlines is not None:
         print(f"Loaded streams: {args.streams}")
@@ -484,10 +500,10 @@ def main():
             print(f"Error: --step must be 0..{steps - 1}", file=sys.stderr)
             sys.exit(1)
         show_single(vx, vy, attrs, args.stride, args.step, streamlines, workers=args.workers,
-                    field_path=args.file, streams_path=args.streams)
+                    field_path=field_path, streams_path=args.streams)
     else:
         animate(vx, vy, attrs, args.stride, args.save, streamlines, workers=args.workers,
-                field_path=args.file, streams_path=args.streams)
+                field_path=field_path, streams_path=args.streams)
 
 
 if __name__ == "__main__":

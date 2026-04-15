@@ -22,8 +22,7 @@ class Grid {
           field_(std::move(field)) {
         const std::size_t numRows = field_.size();
         const std::size_t numCols = numRows > 0 ? field_[0].size() : 0;
-        streamlines_.assign(numRows,
-                            std::vector<std::shared_ptr<Streamline>>(numCols, nullptr));
+        streamlines_.assign(numRows, std::vector<std::shared_ptr<Streamline>>(numCols, nullptr));
     }
 
     [[nodiscard]] std::size_t rows() const { return field_.size(); }

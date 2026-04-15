@@ -27,8 +27,9 @@ TEST_CASE("downstreamCell advances in vector direction", "[grid]") {
 TEST_CASE("traceStreamlineStep assigns a streamline", "[grid]") {
     auto grid = makeField(Vector::Vec2(1.0f, 0.0f));
     grid.traceStreamlineStep({0, 0});
-    // Basic smoke test: no crash and execution completes
-    SUCCEED();
+    const auto lines = grid.getStreamlines();
+    REQUIRE_FALSE(lines.empty());
+    REQUIRE_FALSE(lines[0].empty());
 }
 
 // ---------------------------------------------------------------------------
@@ -85,20 +86,61 @@ TEST_CASE("downstreamCell clamped at bottom edge", "[grid]") {
 }
 
 // ---------------------------------------------------------------------------
+// Single-row and single-column grid edge cases
+// ---------------------------------------------------------------------------
+
+TEST_CASE("downstreamCell on single-row grid returns cell itself", "[grid]") {
+    // 1x3 grid (1 row, 3 cols): no row advancement possible
+    Field::Grid grid(Field::Bounds{0.0f, 2.0f, 0.0f, 0.0f},
+                     Field::Slice(1, std::vector<Vector::Vec2>(3, Vector::Vec2(0.0f, 1.0f))));
+    auto [r, c] = grid.downstreamCell(0, 1);
+    REQUIRE(r == 0);
+    REQUIRE(c == 1);
+}
+
+TEST_CASE("downstreamCell on single-column grid returns cell itself", "[grid]") {
+    // 3x1 grid (3 rows, 1 col): no column advancement possible
+    Field::Grid grid(Field::Bounds{0.0f, 0.0f, 0.0f, 2.0f},
+                     Field::Slice(3, std::vector<Vector::Vec2>(1, Vector::Vec2(1.0f, 0.0f))));
+    auto [r, c] = grid.downstreamCell(1, 0);
+    REQUIRE(r == 1);
+    REQUIRE(c == 0);
+}
+
+TEST_CASE("solver handles single-row grid without crash", "[grid]") {
+    Field::Grid grid(Field::Bounds{0.0f, 2.0f, 0.0f, 0.0f},
+                     Field::Slice(1, std::vector<Vector::Vec2>(3, Vector::Vec2(1.0f, 0.0f))));
+    for (int col = 0; col < 3; col++) {
+        grid.traceStreamlineStep(0, col);
+    }
+    // Every cell maps to itself; 3 independent single-cell streamlines
+    REQUIRE(grid.getStreamlines().size() == 3);
+}
+
+TEST_CASE("solver handles single-column grid without crash", "[grid]") {
+    Field::Grid grid(Field::Bounds{0.0f, 0.0f, 0.0f, 2.0f},
+                     Field::Slice(3, std::vector<Vector::Vec2>(1, Vector::Vec2(0.0f, 1.0f))));
+    for (int row = 0; row < 3; row++) {
+        grid.traceStreamlineStep(row, 0);
+    }
+    REQUIRE(grid.getStreamlines().size() == 3);
+}
+
+// ---------------------------------------------------------------------------
 // joinStreamlines
 // ---------------------------------------------------------------------------
 
 TEST_CASE("joinStreamlines merges end path into start", "[grid]") {
     auto start = std::make_shared<Field::Streamline>(Field::GridCell{0, 0});
     auto end = std::make_shared<Field::Streamline>(Field::GridCell{1, 0});
-    end->path.push_back({2, 0});
+    end->appendPoint({2, 0});
 
     auto grid = makeField();
     grid.joinStreamlines(start, end);
 
-    REQUIRE(start->path.size() == 3);
-    REQUIRE(start->path[1] == (Field::GridCell{1, 0}));
-    REQUIRE(start->path[2] == (Field::GridCell{2, 0}));
+    REQUIRE(start->getPath().size() == 3);
+    REQUIRE(start->getPath()[1] == (Field::GridCell{1, 0}));
+    REQUIRE(start->getPath()[2] == (Field::GridCell{2, 0}));
 }
 
 TEST_CASE("joinStreamlines with null start is a no-op", "[grid]") {
@@ -110,32 +152,35 @@ TEST_CASE("joinStreamlines with null start is a no-op", "[grid]") {
 TEST_CASE("joinStreamlines on equal pointers is a no-op", "[grid]") {
     auto sl = std::make_shared<Field::Streamline>(Field::GridCell{0, 0});
     auto grid = makeField();
-    const std::size_t sizeBefore = sl->path.size();
+    const std::size_t sizeBefore = sl->getPath().size();
     grid.joinStreamlines(sl, sl);
-    REQUIRE(sl->path.size() == sizeBefore);
+    REQUIRE(sl->getPath().size() == sizeBefore);
 }
 
 // ---------------------------------------------------------------------------
 // traceStreamlineStep multi-step
 // ---------------------------------------------------------------------------
 
-TEST_CASE("tracing multiple steps builds a path without crash", "[grid]") {
+TEST_CASE("tracing multiple steps builds a path", "[grid]") {
     auto grid = makeField(Vector::Vec2(1.0f, 0.0f));
     grid.traceStreamlineStep({0, 0});
     grid.traceStreamlineStep({0, 1});
     grid.traceStreamlineStep({0, 2});
-    SUCCEED();
+    const auto lines = grid.getStreamlines();
+    REQUIRE(lines.size() == 1);
+    REQUIRE(lines[0].size() == 3);
 }
 
-TEST_CASE("tracing into an occupied cell triggers merge without crash", "[grid]") {
-    // (0,0) points right; (0,2) points left -- both will claim (0,1) as destination
+TEST_CASE("tracing into an occupied cell triggers merge", "[grid]") {
+    // (0,0) points right; (0,2) points left -- both converge on (0,1)
     Field::Slice f(3, std::vector<Vector::Vec2>(3));
     f[0][0] = Vector::Vec2(1.0f, 0.0f);
     f[0][2] = Vector::Vec2(-1.0f, 0.0f);
     Field::Grid grid(Field::Bounds{0.0f, 2.0f, 0.0f, 2.0f}, std::move(f));
-    grid.traceStreamlineStep({0, 0}); // assigns streamline to (0,0) and (0,1)
-    grid.traceStreamlineStep({0, 2}); // dest (0,1) already occupied -> merge
-    SUCCEED();
+    grid.traceStreamlineStep({0, 0}, {0, 1}); // assigns streamline to (0,0)+(0,1)
+    grid.traceStreamlineStep({0, 2}, {0, 1}); // dest (0,1) occupied -> merge
+    // All three cells end up on one streamline
+    REQUIRE(grid.getStreamlines().size() == 1);
 }
 
 // ---------------------------------------------------------------------------
@@ -186,8 +231,8 @@ TEST_CASE("getStreamlines path contents match expected for uniform right-pointin
 TEST_CASE("getStreamlines returns 1 streamline when paths converge via merge",
           "[grid][streamlines]") {
     Field::Slice f(3, std::vector<Vector::Vec2>(3));
-    f[0][0] = Vector::Vec2(1.0f, 0.0f);   // dest (0,1)
-    f[0][2] = Vector::Vec2(-1.0f, 0.0f);  // dest (0,1)
+    f[0][0] = Vector::Vec2(1.0f, 0.0f);  // dest (0,1)
+    f[0][2] = Vector::Vec2(-1.0f, 0.0f); // dest (0,1)
     Field::Grid grid(Field::Bounds{0.0f, 2.0f, 0.0f, 2.0f}, std::move(f));
     grid.traceStreamlineStep({0, 0}, {0, 1});
     grid.traceStreamlineStep({0, 2}, {0, 1});

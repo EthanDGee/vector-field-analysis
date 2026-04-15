@@ -1,9 +1,0 @@
-# mpi.toml
-# Distributed memory CPU analysis using MPI.
-#
-# Run: mpirun -n 4 analyzer bins/analyzer/configs/mpi.toml
-# CHPC: srun -n 4 analyzer bins/analyzer/configs/mpi.toml
-
-[analyzer]
-input   = "field.h5"
-solver  = "mpi"

@@ -93,6 +93,8 @@ Vector::Vec2 evalSpiral(Vector::Vec2 pos, const FieldLayerConfig& layer) {
 }
 
 Vector::Vec2 evalNoise(Vector::Vec2 pos, float time, const FieldLayerConfig& layer) {
+    // Multiply by 100 to spread seeds far apart in Perlin noise coordinate space;
+    // adjacent seed values would otherwise produce nearly identical patterns.
     const float seedOffset = static_cast<float>(layer.seed) * 100.0f;
     const float scaledX = pos.x * layer.scale;
     const float scaledY = pos.y * layer.scale;
@@ -159,12 +161,12 @@ Field::TimeSeries generateTimeSeries(const SimulatorConfig& config) {
     std::vector<float> xCoords(width);
     std::vector<float> yCoords(height);
     for (std::size_t col = 0; col < width; ++col) {
-        xCoords[col] = Field::indexToCoord(static_cast<int>(col), config.grid.width, config.bounds.xMin,
-                                   config.bounds.xMax);
+        xCoords[col] = Field::indexToCoord(static_cast<int>(col), config.grid.width,
+                                           config.bounds.xMin, config.bounds.xMax);
     }
     for (std::size_t row = 0; row < height; ++row) {
-        yCoords[row] = Field::indexToCoord(static_cast<int>(row), config.grid.height, config.bounds.yMin,
-                                   config.bounds.yMax);
+        yCoords[row] = Field::indexToCoord(static_cast<int>(row), config.grid.height,
+                                           config.bounds.yMin, config.bounds.yMax);
     }
 
     // Pre-compile custom field expressions - one evaluator per layer, nullptr for non-custom

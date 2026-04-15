@@ -1,6 +1,6 @@
 #include "streamWriter.hpp"
 
-#include "fieldIOCommon.hpp"
+#include "fieldIoCommon.hpp"
 
 #include <cstdint>
 #include <highfive/highfive.hpp>

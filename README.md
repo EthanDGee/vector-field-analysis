@@ -8,7 +8,9 @@ A C++17 research tool for generating and analyzing 2D vector fields. The simulat
 
 | Library | Description |
 |---|---|
-| [`libs/vector`](libs/vector) | Core vector types and math utilities shared across binaries and libraries |
+| [`libs/field`](libs/field) | Core vector types, grid, and streamline math shared across binaries and libraries |
+| [`libs/field_io`](libs/field_io) | HDF5 read/write for field and streamline data |
+| [`libs/utils`](libs/utils) | Shared utilities (byte formatting, TOML helpers) |
 
 **Binaries** (`bins/`)
 

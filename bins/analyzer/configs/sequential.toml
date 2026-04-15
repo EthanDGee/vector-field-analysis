@@ -1,8 +1,0 @@
-# sequential.toml
-# Single-threaded reference implementation.
-#
-# Run: analyzer bins/analyzer/configs/sequential.toml
-
-[analyzer]
-input  = "field.h5"
-solver = "sequential"

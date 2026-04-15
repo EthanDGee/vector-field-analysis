@@ -1,6 +1,6 @@
 #pragma once
-#include "simulatorConfig.hpp"
 #include "fieldTypes.hpp"
+#include "simulatorConfig.hpp"
 
 namespace FieldGenerator {
 

@@ -1,5 +1,4 @@
-#include "analyzerConfig.hpp"
-#include "analyzerConfigParser.hpp"
+#include "configParser.hpp"
 #include "fieldReader.hpp"
 #include "formatBytes.hpp"
 #include "solverFactory.hpp"
@@ -11,6 +10,7 @@
 #endif
 
 #include <algorithm>
+#include <cerrno>
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
@@ -18,7 +18,6 @@
 #include <iostream>
 #include <numeric>
 #include <string>
-#include <string_view>
 #include <thread>
 
 struct RunResult {
@@ -35,7 +34,8 @@ static RunResult runSolver(StreamlineSolver& solver, const Field::TimeSeries& ti
         result.streams.push_back(grid.getStreamlines());
     }
     result.elapsedMilliseconds =
-        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startTime).count();
+        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startTime)
+            .count();
     return result;
 }
 
@@ -73,8 +73,8 @@ static void verify(const std::vector<StreamWriter::StepStreamlines>& reference,
     }
     for (std::size_t stepIndex = 0; stepIndex < reference.size(); ++stepIndex) {
         if (canonicalize(reference[stepIndex]) != canonicalize(other[stepIndex])) {
-            std::cerr << "Error: " << name << " streamlines differ from sequential at step " << stepIndex
-                      << "\n";
+            std::cerr << "Error: " << name << " streamlines differ from sequential at step "
+                      << stepIndex << "\n";
             std::exit(1);
         }
     }
@@ -103,26 +103,14 @@ static void writeAndReport(const std::string& outPath,
     std::cout << "\n";
 }
 
-// Derive output path: strip trailing .h5 (if present) and append .streams.h5
-static std::string makeOutPath(const std::string& inPath) {
-    const std::string suffix = ".h5";
-    if (inPath.size() > suffix.size() &&
-        inPath.compare(inPath.size() - suffix.size(), suffix.size(), suffix) == 0) {
-        return inPath.substr(0, inPath.size() - suffix.size()) + ".streams.h5";
-    }
-    return inPath + ".streams.h5";
-}
-
 static void printHelp() {
     std::cout << "Usage: analyzer <config.toml>\n"
               << "\nRuns vector field streamline analysis using the given TOML config file.\n"
-              << "See bins/analyzer/configs/ for example configs.\n"
-              << "See bins/analyzer/docs/config-guide.md for all config keys.\n"
-              << "\n[analyzer] keys:\n"
-              << "  input   = \"field.h5\"   HDF5 field file to read\n"
-              << "  output  = \"\"           output path (default: <input>.streams.h5)\n"
-              << "  solver  = \"all\"        sequential | openmp | pthreads | mpi | all\n"
-              << "  threads = 0            thread count for pthreads (0 = hardware_concurrency)\n"
+              << "Reads data/<config-stem>/field.h5 and writes data/<config-stem>/streams.h5.\n"
+              << "See configs/ for example configs.\n"
+              << "\n[analyzer] keys (all optional):\n"
+              << "  solver  = \"all\"   sequential | openmp | pthreads | mpi | all\n"
+              << "  threads = 0       thread count for pthreads (0 = hardware_concurrency)\n"
               << "\nFor MPI: mpirun -n N analyzer <config.toml>  with solver = \"mpi\"\n";
 }
 
@@ -132,8 +120,10 @@ static unsigned int resolveThreadCount(unsigned int requested) {
     }
     if (const char* env = std::getenv("ANALYZER_THREADS")) {
         char* end = nullptr;
+        errno = 0;
         const long val = std::strtol(env, &end, 10);
-        if (end != env && val > 0) {
+        if (end != env && errno != ERANGE && val > 0 &&
+            val <= static_cast<long>(std::numeric_limits<unsigned int>::max())) {
             return static_cast<unsigned int>(val);
         }
     }
@@ -171,24 +161,32 @@ static void runAll(const Field::TimeSeries& field, unsigned int threadCount, int
         const std::string pthreadsLabel = "pthreads (" + std::to_string(threadCount) + " thr)";
         const std::string mpiLabel = "mpi (" + std::to_string(mpiSize) + " rank(s))";
 
-        int labelWidth =
-            static_cast<int>(std::max({sequentialLabel.size(), openmpLabel.size(),
-                                       pthreadsLabel.size(), mpiLabel.size()})) +
-            2;
-        std::cout << std::left << std::setw(labelWidth) << sequentialLabel << sequentialResult.elapsedMilliseconds
-                  << " ms\n"
-                  << std::setw(labelWidth) << openmpLabel << openmpResult.elapsedMilliseconds << " ms"
+        int labelWidth = static_cast<int>(std::max({sequentialLabel.size(), openmpLabel.size(),
+                                                    pthreadsLabel.size(), mpiLabel.size()})) +
+                         2;
+        std::cout << std::left << std::setw(labelWidth) << sequentialLabel
+                  << sequentialResult.elapsedMilliseconds << " ms\n"
+                  << std::setw(labelWidth) << openmpLabel << openmpResult.elapsedMilliseconds
+                  << " ms"
                   << "  ("
-                  << (openmpResult.elapsedMilliseconds > 0 ? sequentialResult.elapsedMilliseconds / openmpResult.elapsedMilliseconds : 0.0)
+                  << (openmpResult.elapsedMilliseconds > 0
+                          ? sequentialResult.elapsedMilliseconds / openmpResult.elapsedMilliseconds
+                          : 0.0)
                   << "x vs sequential)\n"
-                  << std::setw(labelWidth) << pthreadsLabel << pthreadsResult.elapsedMilliseconds << " ms"
+                  << std::setw(labelWidth) << pthreadsLabel << pthreadsResult.elapsedMilliseconds
+                  << " ms"
                   << "  ("
-                  << (pthreadsResult.elapsedMilliseconds > 0 ? sequentialResult.elapsedMilliseconds / pthreadsResult.elapsedMilliseconds : 0.0)
+                  << (pthreadsResult.elapsedMilliseconds > 0
+                          ? sequentialResult.elapsedMilliseconds /
+                                pthreadsResult.elapsedMilliseconds
+                          : 0.0)
                   << "x vs sequential)\n";
         if (runMpi) {
             std::cout << std::setw(labelWidth) << mpiLabel << mpiResult.elapsedMilliseconds << " ms"
                       << "  ("
-                      << (mpiResult.elapsedMilliseconds > 0 ? sequentialResult.elapsedMilliseconds / mpiResult.elapsedMilliseconds : 0.0)
+                      << (mpiResult.elapsedMilliseconds > 0
+                              ? sequentialResult.elapsedMilliseconds / mpiResult.elapsedMilliseconds
+                              : 0.0)
                       << "x vs sequential)\n";
         } else {
             std::cout << "(mpi skipped -- rerun with mpirun -n N for a multi-rank comparison)\n";
@@ -233,11 +231,17 @@ static void runOne(const std::string& solverName, const Field::TimeSeries& field
 
 int main(int argc, char* argv[]) {
 #ifdef USE_MPI
-    MPI_Init(&argc, &argv);
+    if (MPI_Init(&argc, &argv) != MPI_SUCCESS) {
+        std::cerr << "Error: MPI_Init failed\n";
+        std::exit(1);
+    }
     int mpiRank = 0;
     int mpiSize = 1;
-    MPI_Comm_rank(MPI_COMM_WORLD, &mpiRank);
-    MPI_Comm_size(MPI_COMM_WORLD, &mpiSize);
+    if (MPI_Comm_rank(MPI_COMM_WORLD, &mpiRank) != MPI_SUCCESS ||
+        MPI_Comm_size(MPI_COMM_WORLD, &mpiSize) != MPI_SUCCESS) {
+        std::cerr << "Error: MPI_Comm_rank/size failed\n";
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
 #else
     int mpiRank = 0;
     int mpiSize = 1;
@@ -266,14 +270,15 @@ int main(int argc, char* argv[]) {
     }
 
     try {
-        const AnalyzerConfig config = ConfigParser::parseFile(argv[1]);
-        const Field::TimeSeries field = FieldReader::read(config.inputPath);
-        // Use the TOML output path if set; otherwise derive from the input field path.
-        const std::string outPath =
-            config.outputPath.empty() ? makeOutPath(config.inputPath) : config.outputPath;
+        const AnalyzerConfig config = ConfigParser::parseAnalyzer(argv[1]);
+        const std::string stem = std::filesystem::path(argv[1]).stem().string();
+        const std::string fieldPath = "data/" + stem + "/field.h5";
+        const std::string outPath = "data/" + stem + "/streams.h5";
+        std::filesystem::create_directories("data/" + stem);
+        const Field::TimeSeries field = FieldReader::read(fieldPath);
 
         if (field.frames.empty()) {
-            throw std::runtime_error("field file contains no time steps: " + config.inputPath);
+            throw std::runtime_error("field file contains no time steps: " + fieldPath);
         }
 
         // Resolve thread count from config, then adapt for fair comparison in "all" mode:
@@ -287,7 +292,7 @@ int main(int argc, char* argv[]) {
         if (mpiRank == 0) {
             const int numSteps = static_cast<int>(field.frames.size());
             const auto [width, height] = field.gridSize();
-            std::cout << "Field:   " << config.inputPath << "\n"
+            std::cout << "Field:   " << fieldPath << "\n"
                       << "Grid:    " << width << " x " << height << "  |  x [" << field.bounds.xMin
                       << ", " << field.bounds.xMax << "]"
                       << "  y [" << field.bounds.yMin << ", " << field.bounds.yMax << "]\n"

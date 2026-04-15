@@ -1,5 +1,5 @@
 #include "mpiStreamlineSolver.hpp"
-#include "openMPStreamlineSolver.hpp"
+#include "openMpStreamlineSolver.hpp"
 #include "pthreadsStreamlineSolver.hpp"
 #include "sequentialStreamlineSolver.hpp"
 #include "solverFactory.hpp"
@@ -17,10 +17,10 @@ TEST_CASE("makeSolver(\"sequential\") returns SequentialStreamlineSolver", "[fac
     REQUIRE(dynamic_cast<SequentialStreamlineSolver*>(solver.get()) != nullptr);
 }
 
-TEST_CASE("makeSolver(\"openmp\") returns OpenMPStreamlineSolver", "[factory]") {
+TEST_CASE("makeSolver(\"openmp\") returns OpenMpStreamlineSolver", "[factory]") {
     auto solver = makeSolver("openmp", 0);
     REQUIRE(solver != nullptr);
-    REQUIRE(dynamic_cast<OpenMPStreamlineSolver*>(solver.get()) != nullptr);
+    REQUIRE(dynamic_cast<OpenMpStreamlineSolver*>(solver.get()) != nullptr);
 }
 
 TEST_CASE("makeSolver(\"pthreads\") returns PthreadsStreamlineSolver", "[factory]") {

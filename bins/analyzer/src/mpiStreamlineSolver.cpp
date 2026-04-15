@@ -58,15 +58,15 @@ void MpiStreamlineSolver::computeTimeStep(Field::Grid& grid) {
     // Guard size_t overflow before computing localCount.
     // colCount == 0 -> localCount == 0, no overflow possible; guard avoids division by zero
     // in the overflow formula below.
-    if (colCount > 0 &&
-        static_cast<std::size_t>(localRows) > std::numeric_limits<std::size_t>::max() / kCellPairPackSize /
-                                                  static_cast<std::size_t>(colCount)) {
+    if (colCount > 0 && static_cast<std::size_t>(localRows) >
+                            std::numeric_limits<std::size_t>::max() / kCellPairPackSize /
+                                static_cast<std::size_t>(colCount)) {
         std::cerr << "rank " << rank
                   << ": fatal: grid too large for MPI gather (size_t overflow)\n";
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
-    const auto localCount =
-        static_cast<std::size_t>(localRows) * static_cast<std::size_t>(colCount) * kCellPairPackSize;
+    const auto localCount = static_cast<std::size_t>(localRows) *
+                            static_cast<std::size_t>(colCount) * kCellPairPackSize;
     if (localCount > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
         std::cerr << "rank " << rank
                   << ": fatal: localCount exceeds INT_MAX; grid too large for MPI gather\n";
@@ -110,7 +110,8 @@ void MpiStreamlineSolver::computeTimeStep(Field::Grid& grid) {
                 std::cerr << "rank 0: fatal: total gather size exceeds INT_MAX\n";
                 MPI_Abort(MPI_COMM_WORLD, 1);
             }
-            displacements[static_cast<std::size_t>(rankIndex)] = static_cast<int>(runningDisplacement);
+            displacements[static_cast<std::size_t>(rankIndex)] =
+                static_cast<int>(runningDisplacement);
         }
         const int64_t total = runningDisplacement + recvCounts[static_cast<std::size_t>(size - 1)];
         if (total > std::numeric_limits<int>::max()) {

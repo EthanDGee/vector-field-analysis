@@ -2,7 +2,7 @@
 
 #include "analyzerConfig.hpp"
 #include "mpiStreamlineSolver.hpp"
-#include "openMPStreamlineSolver.hpp"
+#include "openMpStreamlineSolver.hpp"
 #include "pthreadsStreamlineSolver.hpp"
 #include "sequentialStreamlineSolver.hpp"
 
@@ -19,7 +19,7 @@ std::unique_ptr<StreamlineSolver> makeSolver(std::string_view name, unsigned int
         return std::make_unique<SequentialStreamlineSolver>();
     }
     if (name == "openmp") {
-        return std::make_unique<OpenMPStreamlineSolver>(threadCount);
+        return std::make_unique<OpenMpStreamlineSolver>(threadCount);
     }
     if (name == "pthreads") {
         return std::make_unique<PthreadsStreamlineSolver>(threadCount);

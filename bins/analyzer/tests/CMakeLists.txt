@@ -5,6 +5,7 @@ add_executable(analyzer_tests
     test_streamWriter.cpp
 )
 
+target_include_directories(analyzer_tests PRIVATE ${CMAKE_SOURCE_DIR}/bins/tests)
 target_link_libraries(analyzer_tests PRIVATE analyzer_lib Catch2::Catch2WithMain)
 
 catch_discover_tests(analyzer_tests)

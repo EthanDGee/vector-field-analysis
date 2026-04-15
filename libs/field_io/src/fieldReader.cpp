@@ -1,5 +1,6 @@
 #include "fieldReader.hpp"
-#include "fieldIOCommon.hpp"
+
+#include "fieldIoCommon.hpp"
 
 #include <highfive/highfive.hpp>
 #include <stdexcept>

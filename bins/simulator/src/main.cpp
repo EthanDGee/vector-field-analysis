@@ -12,8 +12,8 @@ int main(int argc, char* argv[]) {
     if (argc > 1 && (std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h")) {
         std::cout << "Usage: simulator <config.toml>\n"
                   << "\nRuns a vector field simulation using the given TOML config file.\n"
-                  << "The output path is set via the 'output' key in the config.\n"
-                  << "See bins/simulator/configs/ for example configs.\n";
+                  << "Output is written to data/<config-stem>/field.h5.\n"
+                  << "See configs/ for example configs.\n";
         return 0;
     }
     if (argc < 2) {
@@ -22,7 +22,10 @@ int main(int argc, char* argv[]) {
     }
     try {
         const std::string configPath = argv[1];
-        const SimulatorConfig config = ConfigParser::parseFile(configPath);
+        const SimulatorConfig config = ConfigParser::parseSimulation(configPath);
+        const std::string stem = std::filesystem::path(configPath).stem().string();
+        const std::string outPath = "data/" + stem + "/field.h5";
+        std::filesystem::create_directories("data/" + stem);
 
         std::cout << "Config:  " << configPath << "\n"
                   << "Grid:    " << config.grid.width << " x " << config.grid.height << "  |  x ["
@@ -35,8 +38,8 @@ int main(int argc, char* argv[]) {
             if (layerIndex > 0) {
                 std::cout << "  ";
             }
-            std::cout << toString(config.layers[layerIndex].type) << "(s=" << config.layers[layerIndex].strength
-                      << ")";
+            std::cout << toString(config.layers[layerIndex].type)
+                      << "(s=" << config.layers[layerIndex].strength << ")";
         }
         std::cout << "\n\n";
 
@@ -55,11 +58,11 @@ int main(int argc, char* argv[]) {
             }
             typeLabel += toString(layer.type);
         }
-        FieldWriter::write(config.output, field, typeLabel, config.dt, config.viscosity);
+        FieldWriter::write(outPath, field, typeLabel, config.dt, config.viscosity);
 
         std::error_code err;
-        const auto bytes = std::filesystem::file_size(config.output, err);
-        std::cout << "Wrote " << config.output;
+        const auto bytes = std::filesystem::file_size(outPath, err);
+        std::cout << "Wrote " << outPath;
         if (!err) {
             std::cout << "  (" << Utils::formatBytes(bytes) << ")";
         }

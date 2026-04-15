@@ -1,8 +1,8 @@
+#include "grid.hpp"
 #include "mpiStreamlineSolver.hpp"
-#include "openMPStreamlineSolver.hpp"
+#include "openMpStreamlineSolver.hpp"
 #include "pthreadsStreamlineSolver.hpp"
 #include "sequentialStreamlineSolver.hpp"
-#include "grid.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -71,9 +71,15 @@ TEST_CASE("PthreadsStreamlineSolver two threads", "[impl][pthreads]") {
     REQUIRE_NOTHROW(PthreadsStreamlineSolver{2}.computeTimeStep(grid));
 }
 
-TEST_CASE("PthreadsStreamlineSolver more threads than rows", "[impl][pthreads]") {
+TEST_CASE("PthreadsStreamlineSolver more threads than rows produces correct output",
+          "[impl][pthreads]") {
+    auto seqGrid = makeGrid();
+    SequentialStreamlineSolver{}.computeTimeStep(seqGrid);
+    const auto expected = seqGrid.getStreamlines();
+
     auto grid = makeGrid();
-    REQUIRE_NOTHROW(PthreadsStreamlineSolver{8}.computeTimeStep(grid));
+    PthreadsStreamlineSolver{8}.computeTimeStep(grid);
+    REQUIRE(grid.getStreamlines().size() == expected.size());
 }
 
 TEST_CASE("PthreadsStreamlineSolver empty grid returns early", "[impl][pthreads]") {
@@ -82,18 +88,17 @@ TEST_CASE("PthreadsStreamlineSolver empty grid returns early", "[impl][pthreads]
 }
 
 // ---------------------------------------------------------------------------
-// OpenMPStreamlineSolver
+// OpenMpStreamlineSolver
 // ---------------------------------------------------------------------------
 
-TEST_CASE("OpenMPStreamlineSolver::computeTimeStep completes on uniform field",
-          "[impl][openmp]") {
+TEST_CASE("OpenMpStreamlineSolver::computeTimeStep completes on uniform field", "[impl][openmp]") {
     auto grid = makeGrid();
-    REQUIRE_NOTHROW(OpenMPStreamlineSolver{}.computeTimeStep(grid));
+    REQUIRE_NOTHROW(OpenMpStreamlineSolver{}.computeTimeStep(grid));
 }
 
-TEST_CASE("OpenMPStreamlineSolver::computeTimeStep handles empty grid", "[impl][openmp]") {
+TEST_CASE("OpenMpStreamlineSolver::computeTimeStep handles empty grid", "[impl][openmp]") {
     auto grid = makeEmptyGrid();
-    REQUIRE_NOTHROW(OpenMPStreamlineSolver{}.computeTimeStep(grid));
+    REQUIRE_NOTHROW(OpenMpStreamlineSolver{}.computeTimeStep(grid));
 }
 
 // ---------------------------------------------------------------------------
@@ -138,13 +143,13 @@ TEST_CASE("SequentialStreamlineSolver getStreamlines path contents correct for u
     REQUIRE(lines[2] == (Field::Path{{2, 0}, {2, 1}, {2, 2}}));
 }
 
-TEST_CASE("OpenMPStreamlineSolver getStreamlines returns same count as sequential",
+TEST_CASE("OpenMpStreamlineSolver getStreamlines returns same count as sequential",
           "[impl][openmp][streamlines]") {
     auto seqGrid = makeGrid();
     SequentialStreamlineSolver{}.computeTimeStep(seqGrid);
     const std::size_t expected = seqGrid.getStreamlines().size();
     auto grid = makeGrid();
-    OpenMPStreamlineSolver{}.computeTimeStep(grid);
+    OpenMpStreamlineSolver{}.computeTimeStep(grid);
     REQUIRE(grid.getStreamlines().size() == expected);
 }
 
@@ -177,7 +182,7 @@ TEST_CASE("getStreamlines returns non-empty result after any solver on non-empty
     }
     {
         auto grid = makeGrid();
-        OpenMPStreamlineSolver{}.computeTimeStep(grid);
+        OpenMpStreamlineSolver{}.computeTimeStep(grid);
         REQUIRE_FALSE(grid.getStreamlines().empty());
     }
     {
@@ -190,6 +195,46 @@ TEST_CASE("getStreamlines returns non-empty result after any solver on non-empty
         MpiStreamlineSolver{}.computeTimeStep(grid);
         REQUIRE_FALSE(grid.getStreamlines().empty());
     }
+}
+
+// ---------------------------------------------------------------------------
+// Near-zero magnitude field: solvers must not crash or produce NaN
+// ---------------------------------------------------------------------------
+
+TEST_CASE("all solvers handle near-zero magnitude field without crash", "[impl][consistency]") {
+    // A field where every vector has magnitude 1e-7 — exercises the singularity path
+    const Vector::Vec2 tiny(1e-7f, 0.0f);
+    auto makeNearZeroGrid = [&] {
+        return Field::Grid{Field::Bounds{0.0f, 2.0f, 0.0f, 2.0f},
+                           Field::Slice(3, std::vector<Vector::Vec2>(3, tiny))};
+    };
+    {
+        auto grid = makeNearZeroGrid();
+        REQUIRE_NOTHROW(SequentialStreamlineSolver{}.computeTimeStep(grid));
+        REQUIRE_FALSE(grid.getStreamlines().empty());
+    }
+    {
+        auto grid = makeNearZeroGrid();
+        REQUIRE_NOTHROW(OpenMpStreamlineSolver{}.computeTimeStep(grid));
+        REQUIRE_FALSE(grid.getStreamlines().empty());
+    }
+    {
+        auto grid = makeNearZeroGrid();
+        REQUIRE_NOTHROW(PthreadsStreamlineSolver{2}.computeTimeStep(grid));
+        REQUIRE_FALSE(grid.getStreamlines().empty());
+    }
+}
+
+TEST_CASE("all solvers handle single-row grid without crash", "[impl][consistency]") {
+    Field::Grid grid{Field::Bounds{0.0f, 2.0f, 0.0f, 0.0f},
+                     Field::Slice(1, std::vector<Vector::Vec2>(3, Vector::Vec2(1.0f, 0.0f)))};
+    REQUIRE_NOTHROW(SequentialStreamlineSolver{}.computeTimeStep(grid));
+}
+
+TEST_CASE("all solvers handle single-column grid without crash", "[impl][consistency]") {
+    Field::Grid grid{Field::Bounds{0.0f, 0.0f, 0.0f, 2.0f},
+                     Field::Slice(3, std::vector<Vector::Vec2>(1, Vector::Vec2(1.0f, 0.0f)))};
+    REQUIRE_NOTHROW(SequentialStreamlineSolver{}.computeTimeStep(grid));
 }
 
 // ---------------------------------------------------------------------------

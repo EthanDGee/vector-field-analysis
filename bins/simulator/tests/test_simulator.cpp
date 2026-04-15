@@ -1,13 +1,12 @@
 #include "configParser.hpp"
 #include "fieldGenerator.hpp"
 #include "fieldWriter.hpp"
-#include "simulatorConfig.hpp"
+#include "tempFile.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <cmath>
 #include <filesystem>
-#include <fstream>
 #include <highfive/highfive.hpp>
 #include <string>
 
@@ -56,8 +55,10 @@ TEST_CASE("Vortex field is perpendicular to radius", "[simulator]") {
 
     // Perpendicularity: dot product of vortex vector and position vector must be ~0
     for (auto [col, row] : std::initializer_list<std::pair<int, int>>{{24, 16}, {8, 24}, {20, 8}}) {
-        const float px = Field::indexToCoord(col, config.grid.width, config.bounds.xMin, config.bounds.xMax);
-        const float py = Field::indexToCoord(row, config.grid.height, config.bounds.yMin, config.bounds.yMax);
+        const float px =
+            Field::indexToCoord(col, config.grid.width, config.bounds.xMin, config.bounds.xMax);
+        const float py =
+            Field::indexToCoord(row, config.grid.height, config.bounds.yMin, config.bounds.yMax);
         const auto& cellVector = out.frames[0][row][col];
         // dot(cellVector, pos) = vx*px + vy*py must be zero for a pure vortex
         REQUIRE_THAT((cellVector.x * px) + (cellVector.y * py), WithinAbs(0.0f, 1e-4f));
@@ -144,8 +145,10 @@ TEST_CASE("Source field points away from center", "[simulator][generate]") {
     const int col = 24;
     const int row = 16;
     REQUIRE(out.frames[0][row][col].x > 0.0f);
-    const float px = Field::indexToCoord(col, config.grid.width, config.bounds.xMin, config.bounds.xMax);
-    const float py = Field::indexToCoord(row, config.grid.height, config.bounds.yMin, config.bounds.yMax);
+    const float px =
+        Field::indexToCoord(col, config.grid.width, config.bounds.xMin, config.bounds.xMax);
+    const float py =
+        Field::indexToCoord(row, config.grid.height, config.bounds.yMin, config.bounds.yMax);
     // Angle from center should match vector direction
     const float angle = std::atan2(out.frames[0][row][col].y, out.frames[0][row][col].x);
     const float expected = std::atan2(py, px);
@@ -241,7 +244,8 @@ TEST_CASE("Custom x_expression = \"x\" evaluates to world x-coordinate", "[simul
 
     const int col = 20;
     const int row = 16;
-    const float px = Field::indexToCoord(col, config.grid.width, config.bounds.xMin, config.bounds.xMax);
+    const float px =
+        Field::indexToCoord(col, config.grid.width, config.bounds.xMin, config.bounds.xMax);
     REQUIRE_THAT(out.frames[0][row][col].x, WithinAbs(px, 1e-4f));
     REQUIRE_THAT(out.frames[0][row][col].y, WithinAbs(0.0f, 1e-4f));
 }
@@ -276,32 +280,11 @@ TEST_CASE("Superposition sums field contributions", "[simulator][generate]") {
 // ConfigParser
 // ---------------------------------------------------------------------------
 
-namespace {
-
-struct TempToml {
-    std::filesystem::path path;
-    TempToml(std::string name, const std::string& content)
-        : path(std::filesystem::temp_directory_path() / std::move(name)) {
-        std::ofstream ofs(path);
-        ofs << content;
-    }
-    ~TempToml() noexcept {
-        std::error_code ec;
-        std::filesystem::remove(path, ec);
-    }
-    TempToml(const TempToml&) = delete;
-    TempToml& operator=(const TempToml&) = delete;
-    TempToml(TempToml&&) = delete;
-    TempToml& operator=(TempToml&&) = delete;
-};
-
-} // namespace
-
 // NOLINTBEGIN(readability-function-cognitive-complexity)
 
 TEST_CASE("parseFile() uses defaults when [simulation] section absent", "[simulator][config]") {
-    const TempToml tmp("cfg_defaults.toml", "# empty\n");
-    const SimulatorConfig config = ConfigParser::parseFile(tmp.path.string());
+    const TempFile tmp("# empty\n");
+    const SimulatorConfig config = ConfigParser::parseSimulation(tmp.path.string());
 
     REQUIRE(config.steps == 100);
     REQUIRE_THAT(config.dt, WithinAbs(0.01f, 1e-6f));
@@ -313,23 +296,21 @@ TEST_CASE("parseFile() uses defaults when [simulation] section absent", "[simula
 }
 
 TEST_CASE("parseFile() reads [simulation] values correctly", "[simulator][config]") {
-    const TempToml tmp("cfg_sim_values.toml", "[simulation]\n"
-                                              "steps     = 42\n"
-                                              "dt        = 0.05\n"
-                                              "viscosity = 0.1\n"
-                                              "output    = \"out.h5\"\n"
-                                              "width     = 16\n"
-                                              "height    = 8\n"
-                                              "xmin      = -2.0\n"
-                                              "xmax      =  2.0\n"
-                                              "ymin      = -0.5\n"
-                                              "ymax      =  0.5\n");
-    const SimulatorConfig config = ConfigParser::parseFile(tmp.path.string());
+    const TempFile tmp("[simulation]\n"
+                       "steps     = 42\n"
+                       "dt        = 0.05\n"
+                       "viscosity = 0.1\n"
+                       "width     = 16\n"
+                       "height    = 8\n"
+                       "xmin      = -2.0\n"
+                       "xmax      =  2.0\n"
+                       "ymin      = -0.5\n"
+                       "ymax      =  0.5\n");
+    const SimulatorConfig config = ConfigParser::parseSimulation(tmp.path.string());
 
     REQUIRE(config.steps == 42);
     REQUIRE_THAT(config.dt, WithinAbs(0.05f, 1e-6f));
     REQUIRE_THAT(config.viscosity, WithinAbs(0.1f, 1e-5f));
-    REQUIRE(config.output == std::string("out.h5"));
     REQUIRE(config.grid.width == 16);
     REQUIRE(config.grid.height == 8);
     REQUIRE_THAT(config.bounds.xMin, WithinAbs(-2.0f, 1e-6f));
@@ -340,24 +321,24 @@ TEST_CASE("parseFile() reads [simulation] values correctly", "[simulator][config
 
 TEST_CASE("parseFile() defaults to one vortex layer when [[layers]] absent",
           "[simulator][config]") {
-    const TempToml tmp("cfg_default_layer.toml", "[simulation]\nsteps = 1\n");
-    const SimulatorConfig config = ConfigParser::parseFile(tmp.path.string());
+    const TempFile tmp("[simulation]\nsteps = 1\n");
+    const SimulatorConfig config = ConfigParser::parseSimulation(tmp.path.string());
 
     REQUIRE(config.layers.size() == 1);
     REQUIRE(config.layers[0].type == FieldType::Vortex);
 }
 
 TEST_CASE("parseFile() parses all 8 field types from [[layers]]", "[simulator][config]") {
-    const TempToml tmp("cfg_all_types.toml", "[[layers]]\ntype = \"vortex\"\n"
-                                             "[[layers]]\ntype = \"uniform\"\n"
-                                             "[[layers]]\ntype = \"source\"\n"
-                                             "[[layers]]\ntype = \"sink\"\n"
-                                             "[[layers]]\ntype = \"saddle\"\n"
-                                             "[[layers]]\ntype = \"spiral\"\n"
-                                             "[[layers]]\ntype = \"noise\"\n"
-                                             "[[layers]]\ntype = \"custom\"\n"
-                                             "x_expression = \"x\"\ny_expression = \"y\"\n");
-    const SimulatorConfig config = ConfigParser::parseFile(tmp.path.string());
+    const TempFile tmp("[[layers]]\ntype = \"vortex\"\n"
+                       "[[layers]]\ntype = \"uniform\"\n"
+                       "[[layers]]\ntype = \"source\"\n"
+                       "[[layers]]\ntype = \"sink\"\n"
+                       "[[layers]]\ntype = \"saddle\"\n"
+                       "[[layers]]\ntype = \"spiral\"\n"
+                       "[[layers]]\ntype = \"noise\"\n"
+                       "[[layers]]\ntype = \"custom\"\n"
+                       "x_expression = \"x\"\ny_expression = \"y\"\n");
+    const SimulatorConfig config = ConfigParser::parseSimulation(tmp.path.string());
 
     REQUIRE(config.layers.size() == 8);
     REQUIRE(config.layers[0].type == FieldType::Vortex);
@@ -371,17 +352,17 @@ TEST_CASE("parseFile() parses all 8 field types from [[layers]]", "[simulator][c
 }
 
 TEST_CASE("parseFile() reads layer parameters", "[simulator][config]") {
-    const TempToml tmp("cfg_layer_params.toml", "[[layers]]\n"
-                                                "type         = \"spiral\"\n"
-                                                "strength     = 2.5\n"
-                                                "center_x     = 0.3\n"
-                                                "center_y     = -0.1\n"
-                                                "sink_blend   = 0.7\n"
-                                                "scale        = 2.0\n"
-                                                "seed         = 42\n"
-                                                "x_expression = \"x+1\"\n"
-                                                "y_expression = \"y+1\"\n");
-    const SimulatorConfig config = ConfigParser::parseFile(tmp.path.string());
+    const TempFile tmp("[[layers]]\n"
+                       "type         = \"spiral\"\n"
+                       "strength     = 2.5\n"
+                       "center_x     = 0.3\n"
+                       "center_y     = -0.1\n"
+                       "sink_blend   = 0.7\n"
+                       "scale        = 2.0\n"
+                       "seed         = 42\n"
+                       "x_expression = \"x+1\"\n"
+                       "y_expression = \"y+1\"\n");
+    const SimulatorConfig config = ConfigParser::parseSimulation(tmp.path.string());
 
     REQUIRE(config.layers.size() == 1);
     const FieldLayerConfig& layer = config.layers[0];
@@ -399,12 +380,12 @@ TEST_CASE("parseFile() reads layer parameters", "[simulator][config]") {
 // NOLINTEND(readability-function-cognitive-complexity)
 
 TEST_CASE("parseFile() throws for nonexistent file", "[simulator][config]") {
-    REQUIRE_THROWS(ConfigParser::parseFile("/nonexistent/path/that/does/not/exist.toml"));
+    REQUIRE_THROWS(ConfigParser::parseSimulation("/nonexistent/path/that/does/not/exist.toml"));
 }
 
 TEST_CASE("parseFile() throws for unknown field type", "[simulator][config]") {
-    const TempToml tmp("cfg_bad_type.toml", "[[layers]]\ntype = \"unknown_type\"\n");
-    REQUIRE_THROWS_AS(ConfigParser::parseFile(tmp.path.string()), std::runtime_error);
+    const TempFile tmp("[[layers]]\ntype = \"unknown_type\"\n");
+    REQUIRE_THROWS_AS(ConfigParser::parseSimulation(tmp.path.string()), std::runtime_error);
 }
 
 // ---------------------------------------------------------------------------
@@ -481,7 +462,8 @@ TEST_CASE("Custom y_expression = \"y\" evaluates to world y-coordinate", "[simul
     const auto out = generateTimeSeries(config);
 
     const int row = 20;
-    const float py = Field::indexToCoord(row, config.grid.height, config.bounds.yMin, config.bounds.yMax);
+    const float py =
+        Field::indexToCoord(row, config.grid.height, config.bounds.yMin, config.bounds.yMax);
     REQUIRE_THAT(out.frames[0][row][8].y, WithinAbs(py, 1e-4f));
     REQUIRE_THAT(out.frames[0][row][8].x, WithinAbs(0.0f, 1e-4f));
 }
@@ -543,14 +525,14 @@ TEST_CASE("Layer strength multiplies contribution", "[simulator][generate]") {
 TEST_CASE("FieldWriter::write() creates the HDF5 file", "[simulator][writer]") {
     FieldLayerConfig layer;
     layer.type = FieldType::Vortex;
-    SimulatorConfig config = makeConfig(layer, 1);
+    const SimulatorConfig config = makeConfig(layer, 1);
     const auto tmpPath = std::filesystem::temp_directory_path() / "test_fw_create.h5";
-    config.output = tmpPath.string();
+    const std::string outPath = tmpPath.string();
     std::error_code ec;
     std::filesystem::remove(tmpPath, ec);
 
-    FieldWriter::write(config.output, generateTimeSeries(config),
-                       "vortex", config.dt, config.viscosity);
+    FieldWriter::write(outPath, generateTimeSeries(config), "vortex", config.dt,
+                       config.viscosity);
 
     REQUIRE(std::filesystem::exists(tmpPath));
     std::filesystem::remove(tmpPath, ec);
@@ -560,12 +542,12 @@ TEST_CASE("FieldWriter::write() stores vx/vy with correct dimensions [steps][hei
           "[simulator][writer]") {
     FieldLayerConfig layer;
     layer.type = FieldType::Vortex;
-    SimulatorConfig config = makeConfig(layer, 3);
+    const SimulatorConfig config = makeConfig(layer, 3);
     const auto tmpPath = std::filesystem::temp_directory_path() / "test_fw_dims.h5";
-    config.output = tmpPath.string();
+    const std::string outPath = tmpPath.string();
 
-    FieldWriter::write(config.output, generateTimeSeries(config),
-                       "vortex", config.dt, config.viscosity);
+    FieldWriter::write(outPath, generateTimeSeries(config), "vortex", config.dt,
+                       config.viscosity);
 
     const HighFive::File file(tmpPath.string(), HighFive::File::ReadOnly);
     const auto group = file.getGroup("field");
@@ -585,10 +567,10 @@ TEST_CASE("FieldWriter::write() stores correct metadata attributes", "[simulator
     SimulatorConfig config = makeConfig(layer, 2);
     config.viscosity = 0.5f;
     const auto tmpPath = std::filesystem::temp_directory_path() / "test_fw_attrs.h5";
-    config.output = tmpPath.string();
+    const std::string outPath = tmpPath.string();
 
-    FieldWriter::write(config.output, generateTimeSeries(config),
-                       "vortex", config.dt, config.viscosity);
+    FieldWriter::write(outPath, generateTimeSeries(config), "vortex", config.dt,
+                       config.viscosity);
 
     const HighFive::File file(tmpPath.string(), HighFive::File::ReadOnly);
     const auto group = file.getGroup("field");
@@ -615,12 +597,12 @@ TEST_CASE("FieldWriter::write() vx/vy values match generateTimeSeries() output",
           "[simulator][writer]") {
     FieldLayerConfig layer;
     layer.type = FieldType::Vortex;
-    SimulatorConfig config = makeConfig(layer, 1);
+    const SimulatorConfig config = makeConfig(layer, 1);
     const auto tmpPath = std::filesystem::temp_directory_path() / "test_fw_values.h5";
-    config.output = tmpPath.string();
+    const std::string outPath = tmpPath.string();
 
     const auto field = generateTimeSeries(config);
-    FieldWriter::write(config.output, field, "vortex", config.dt, config.viscosity);
+    FieldWriter::write(outPath, field, "vortex", config.dt, config.viscosity);
 
     const HighFive::File file(tmpPath.string(), HighFive::File::ReadOnly);
     const auto group = file.getGroup("field");

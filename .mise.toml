@@ -63,42 +63,42 @@ run = "ctest --test-dir build --output-on-failure -R simulator"
 [tasks."run:simulator"]
 description = "Build and run the simulator"
 depends = ["build:simulator"]
-run = "./build/bins/simulator/simulator bins/simulator/configs/karman_street.toml"
+run = "./build/bins/simulator/simulator configs/karman_street_128x64.toml"
 
 [tasks."run:analyzer"]
 description = "Generate field data then benchmark all analyzer impls (MPI_RANKS, ANALYZER_THREADS)"
 depends = ["build:analyzer", "run:simulator"]
-run = "mpirun -n ${MPI_RANKS:-4} --oversubscribe ./build/bins/analyzer/analyzer bins/analyzer/configs/all.toml"
+run = "mpirun -n ${MPI_RANKS:-4} --oversubscribe ./build/bins/analyzer/analyzer configs/karman_street_128x64.toml"
 
 [tasks.demo]
 description = "Full pipeline: build, simulate, benchmark all solvers, then visualize"
 depends = ["run:analyzer"]
-run = "uv run tools/visualize.py field.h5 --streams field.streams.h5"
+run = "uv run tools/visualize.py data/${STEM:-karman_street_128x64}/field.h5 --streams data/${STEM:-karman_street_128x64}/streams.h5"
 
 [tasks."run:analyzer:mpi"]
 description = "Run MPI analyzer (NRANKS defaults to 4)"
 depends = ["build:analyzer", "run:simulator"]
-run = "mpirun -n ${MPI_RANKS:-4} --oversubscribe ./build/bins/analyzer/analyzer bins/analyzer/configs/mpi.toml"
+run = "mpirun -n ${MPI_RANKS:-4} --oversubscribe ./build/bins/analyzer/analyzer configs/karman_street_128x64.toml"
 
 [tasks.stats]
 description = "Print stats for field.h5 and field.streams.h5"
-run = "uv run tools/stats.py field.h5 field.streams.h5"
+run = "uv run tools/stats.py data/${STEM:-karman_street_128x64}/field.h5 data/${STEM:-karman_street_128x64}/streams.h5"
 
 [tasks."stats:field"]
 description = "Print stats for field.h5"
-run = "uv run tools/stats.py field.h5"
+run = "uv run tools/stats.py data/${STEM:-karman_street_128x64}/field.h5"
 
 [tasks."stats:streams"]
 description = "Print stats for field.streams.h5"
-run = "uv run tools/stats.py field.streams.h5"
+run = "uv run tools/stats.py data/${STEM:-karman_street_128x64}/streams.h5"
 
 [tasks.visualize]
 description = "Visualize field.h5 with quiver plot"
-run = "uv run tools/visualize.py field.h5"
+run = "uv run tools/visualize.py data/${STEM:-karman_street_128x64}/field.h5"
 
 [tasks."visualize:streams"]
 description = "Visualize field.h5 with streamlines overlaid"
-run = "uv run tools/visualize.py field.h5 --streams field.streams.h5"
+run = "uv run tools/visualize.py data/${STEM:-karman_street_128x64}/field.h5 --streams data/${STEM:-karman_street_128x64}/streams.h5"
 
 [tasks.format]
 description = "Format all source files in place"
@@ -204,4 +204,4 @@ depends = [
 
 [tasks.clean]
 description = "Remove build artifacts"
-run = "rm -rf build build-sanitize build-coverage coverage.info *.h5 *.pkl"
+run = "rm -rf build build-sanitize build-coverage coverage.info data/ *.h5 *.pkl"

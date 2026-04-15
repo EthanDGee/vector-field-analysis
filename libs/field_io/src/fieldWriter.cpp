@@ -1,5 +1,6 @@
 #include "fieldWriter.hpp"
-#include "fieldIOCommon.hpp"
+
+#include "fieldIoCommon.hpp"
 
 #include <highfive/highfive.hpp>
 #include <stdexcept>
@@ -8,8 +9,8 @@
 
 namespace FieldWriter {
 
-void write(const std::string& path, const Field::TimeSeries& field,
-           const std::string& typeLabel, float dt, float viscosity) {
+void write(const std::string& path, const Field::TimeSeries& field, const std::string& typeLabel,
+           float dt, float viscosity) {
     const Field::GridSize gridSize = field.gridSize();
     if (field.frames.empty() || gridSize.width == 0 || gridSize.height == 0) {
         throw std::runtime_error("Cannot write empty field to: " + path);
@@ -22,8 +23,10 @@ void write(const std::string& path, const Field::TimeSeries& field,
     const std::size_t numFrames = field.frames.size();
     const auto numRows = static_cast<std::size_t>(gridSize.height);
     const auto numCols = static_cast<std::size_t>(gridSize.width);
-    RawFieldData vx(numFrames, std::vector<std::vector<float>>(numRows, std::vector<float>(numCols)));
-    RawFieldData vy(numFrames, std::vector<std::vector<float>>(numRows, std::vector<float>(numCols)));
+    RawFieldData vx(numFrames,
+                    std::vector<std::vector<float>>(numRows, std::vector<float>(numCols)));
+    RawFieldData vy(numFrames,
+                    std::vector<std::vector<float>>(numRows, std::vector<float>(numCols)));
     for (std::size_t frameIndex = 0; frameIndex < numFrames; ++frameIndex) {
         for (std::size_t rowIndex = 0; rowIndex < numRows; ++rowIndex) {
             for (std::size_t colIndex = 0; colIndex < numCols; ++colIndex) {

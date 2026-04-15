@@ -1,6 +1,6 @@
 #include "configParser.hpp"
 
-#include "toml_include.hpp"
+#include "toml_include.hpp" // NOLINT(misc-include-cleaner) — wrapper sets TOML_EXCEPTIONS
 
 #include <stdexcept>
 #include <string>
@@ -9,11 +9,8 @@ namespace ConfigParser {
 
 namespace {
 
-// Struct defaults in simulatorConfig.hpp are the single source of truth.
-// The parser only assigns a field when the key is explicitly present in the TOML.
-
+// toString() in simulatorConfig.hpp handles the reverse direction (enum->string).
 FieldType parseFieldType(const std::string& typeName) {
-    // toString() in simulatorConfig.hpp handles the reverse direction (enum->string).
     if (typeName == "vortex") {
         return FieldType::Vortex;
     }
@@ -80,6 +77,8 @@ FieldLayerConfig parseLayerConfig(const toml::table& table) {
 }
 
 SimulatorConfig parseSimulationSection(const toml::table& simulation) {
+    // Struct defaults in simulatorConfig.hpp are the single source of truth.
+    // The parser only assigns a field when the key is explicitly present in the TOML.
     SimulatorConfig config;
     if (const auto steps = simulation["steps"].value<int64_t>()) {
         config.steps = static_cast<int>(*steps);
@@ -89,9 +88,6 @@ SimulatorConfig parseSimulationSection(const toml::table& simulation) {
     }
     if (const auto viscosity = simulation["viscosity"].value<double>()) {
         config.viscosity = static_cast<float>(*viscosity);
-    }
-    if (const auto outputPath = simulation["output"].value<std::string>()) {
-        config.output = *outputPath;
     }
     if (const auto width = simulation["width"].value<int64_t>()) {
         config.grid.width = static_cast<int>(*width);
@@ -116,7 +112,7 @@ SimulatorConfig parseSimulationSection(const toml::table& simulation) {
 
 } // namespace
 
-SimulatorConfig parseFile(const std::string& path) {
+SimulatorConfig parseSimulation(const std::string& path) {
     const toml::table table = toml::parse_file(path);
     SimulatorConfig config;
 
@@ -158,9 +154,6 @@ SimulatorConfig parseFile(const std::string& path) {
     }
     if (config.viscosity < 0.0f) {
         throw std::runtime_error("viscosity must be >= 0");
-    }
-    if (config.output.empty()) {
-        throw std::runtime_error("output path must not be empty");
     }
 
     return config;
