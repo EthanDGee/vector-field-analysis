@@ -1,6 +1,7 @@
 option(ENABLE_CUDA "Build analyzer CUDA solver" OFF)
 
 if(ENABLE_CUDA)
+  set(CMAKE_CUDA_ARCHITECTURES 52)
   enable_language(CUDA)
   find_package(CUDAToolkit REQUIRED)
 endif()
@@ -47,7 +48,6 @@ if(ENABLE_CUDA)
                         CUDA_SEPARABLE_COMPILATION ON
                         CUDA_STANDARD 17
                         CUDA_STANDARD_REQUIRED ON
-                        CUDA_ARCHITECTURES native
   )
 endif()
 
