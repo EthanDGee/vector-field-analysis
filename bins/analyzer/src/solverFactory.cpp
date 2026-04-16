@@ -28,11 +28,11 @@ std::unique_ptr<StreamlineSolver> makeSolver(std::string_view name, unsigned int
     if (name == "pthreads") {
         return std::make_unique<PthreadsStreamlineSolver>(threadCount);
     }
-    #ifdef ENABLE_CUDA_SOLVER
+#ifdef ENABLE_CUDA_SOLVER
     if (name == "cuda") {
       return std::make_unique<CudaStreamlineSolver>();
     }
-    #endif
+#endif
     if (name == "mpi") {
         return std::make_unique<MpiStreamlineSolver>();
     }
