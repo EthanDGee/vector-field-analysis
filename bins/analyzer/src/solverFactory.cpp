@@ -34,7 +34,7 @@ std::unique_ptr<StreamlineSolver> makeSolver(std::string_view name, unsigned int
         return std::make_unique<CudaStreamlineSolver>();
     }
     if (name == "cuda_full") {
-      return std::make_unique<CudaFullStreamlineSolver>();
+        return std::make_unique<CudaFullStreamlineSolver>();
     }
 #endif
     if (name == "mpi") {
