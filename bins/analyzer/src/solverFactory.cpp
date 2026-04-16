@@ -6,6 +6,10 @@
 #include "pthreadsStreamlineSolver.hpp"
 #include "sequentialStreamlineSolver.hpp"
 
+#ifdef ENABLE_CUDA_SOLVER
+#include "cudaStreamlineSolver.hpp"
+#endif
+
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -24,6 +28,11 @@ std::unique_ptr<StreamlineSolver> makeSolver(std::string_view name, unsigned int
     if (name == "pthreads") {
         return std::make_unique<PthreadsStreamlineSolver>(threadCount);
     }
+    #ifdef ENABLE_CUDA_SOLVER
+    if (name == "cuda") {
+      return std::make_unique<cudaStreamlineSolver>();
+    }
+    #endif
     if (name == "mpi") {
         return std::make_unique<MpiStreamlineSolver>();
     }
