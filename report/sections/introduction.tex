@@ -1,11 +1,33 @@
 \section{Introduction}
 
-The introduction should provide background on the topic, state the problem or research question, explain the significance of the work, and provide an overview of the paper's structure. It should motivate the reader and set the context for the research.
+Vector field analysis is a cornerstone of scientific visualization, providing critical insights into systems that involve particle interactions such aero and fluid dynamic modeling, and areas that exhibit consist forces such as graviational modeling and magnetic fields.
 
-IEEE guidelines:
-\begin{itemize}
-	\item Start with general background and narrow down to specific problem
-	\item Clearly state the contribution of the paper
-	\item Briefly outline the paper structure
-	\item Define abbreviations on first use
-\end{itemize}
+These fields consist of a grid of discretely spaced points that are each assigned a vector.
+This vector serves to store the strength and direction of motion around that point at a given instance.
+
+To be able to effectively understand and analyze these fields, researchers rely on various modelings of these fields to identify key attributes such as vorticity, divergence, critical points, and flux.
+
+
+\subsection{Streamline Analysis}
+
+A streamline represents the path that an object would take if it moved through a static vector field.
+Where starting at given vector always proceeding in the direction of the current vector iteratively.
+By connecting these directions throughout the field, streamlines illustrate how a substance or particle would flow at a particular instant.
+This approach provides valuable insight into the topology of a given vector.
+This allows researchers to easily identify the overarching flow of a field, it's sources and sinks, and other points of criticality.
+
+Formally, a streamline is a curve that follows the direction of the vector field at every point, representing the path an object would take if it moved through the field at a given instant. For a steady vector field $\mathbf{v}(\mathbf{x})$, a streamline $\mathbf{x}(s)$ is defined by the differential equation:
+\begin{equation}
+	\frac{d\mathbf{x}}{ds} = \mathbf{v}(\mathbf{x}(s))
+\end{equation}
+where $s$ is a parameter along the curve.
+
+where $s$ is a parameter along the curve.
+
+
+These differ from pathlines which seek  to track particles progress over time.
+In comparison to Streamlines which allow for a more  rmprehensive snapshots of entire vector fields at a static level and how a given field change over time. Which is highly relevant to filed like magneticism.
+This broader reach leads to a far higher complexity for streamline tracing in comparsion to pathlines.
+
+
+
