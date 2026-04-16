@@ -119,16 +119,19 @@ uvx gcovr -r . build-coverage/ \
 [tasks."run:simulator"]
 description = "Build and run the simulator"
 depends = ["build:simulator"]
+raw = true
 run = "./build/bins/simulator/simulator configs/karman_street_128x64.toml"
 
 [tasks."run:analyzer"]
 description = "Generate field data then benchmark all analyzer impls (MPI_RANKS, ANALYZER_THREADS)"
 depends = ["build:analyzer", "run:simulator"]
+raw = true
 run = "mpirun -n ${MPI_RANKS:-4} --oversubscribe ./build/bins/analyzer/analyzer configs/karman_street_128x64.toml"
 
 [tasks."run:analyzer:mpi"]
 description = "Run MPI analyzer (MPI_RANKS defaults to 4)"
 depends = ["build:analyzer", "run:simulator"]
+raw = true
 run = "mpirun -n ${MPI_RANKS:-4} --oversubscribe ./build/bins/analyzer/analyzer configs/karman_street_128x64.toml"
 
 [tasks.demo]
