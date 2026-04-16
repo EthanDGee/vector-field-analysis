@@ -67,6 +67,7 @@ add_executable(analyzer src/main.cpp)
 target_link_libraries(analyzer PRIVATE 
                       analyzer_lib 
                       utils
+                      stdc++fs 
                      )
 
 add_subdirectory(tests)
