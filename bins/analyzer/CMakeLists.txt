@@ -1,4 +1,4 @@
-option(ENABLE_CUDA "Build analyzer CUDA solver" ON)
+option(ENABLE_CUDA "Build analyzer CUDA solver" OFF)
 
 if(ENABLE_CUDA)
   enable_language(CUDA)
@@ -7,8 +7,6 @@ endif()
 
 add_library(analyzer_lib STATIC
     src/configParser.cpp
-    src/fieldReader.cpp
-    src/mainHelpers.cpp
     src/mpiStreamlineSolver.cpp
     src/openMpStreamlineSolver.cpp
     src/pthreadsStreamlineSolver.cpp
