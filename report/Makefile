@@ -2,18 +2,45 @@
 
 .PHONY: all clean view
 
+LATEXMK  := $(shell command -v latexmk  2>/dev/null)
+TECTONIC := $(shell command -v tectonic 2>/dev/null)
+PDFLATEX := $(shell command -v pdflatex 2>/dev/null)
+
 all:
-	latexmk -pdf main.tex
+ifneq ($(LATEXMK),)
+	latexmk -pdf -jobname=report main.tex
+else ifneq ($(TECTONIC),)
+	tectonic main.tex && mv main.pdf report.pdf
+else ifneq ($(PDFLATEX),)
+	pdflatex -jobname=report main.tex
+	bibtex report
+	pdflatex -jobname=report main.tex
+	pdflatex -jobname=report main.tex
+else
+	$(error No LaTeX compiler found: install latexmk, tectonic, or pdflatex)
+endif
 
 watch:
-	latexmk -pvc main.tex
+ifneq ($(LATEXMK),)
+	latexmk -pvc -jobname=report main.tex
+else
+	$(error watch requires latexmk: tectonic and pdflatex have no watch mode)
+endif
 
 view:
-	xdg-open main.pdf
+	xdg-open report.pdf
 
 clean:
 	./clean-up.sh
-	rm -f main.pdf
+	rm -f report.pdf
 
 debug:
-	pdflatex -interaction=scrollmode main.tex
+ifneq ($(LATEXMK),)
+	latexmk -pdf -jobname=report -interaction=scrollmode main.tex
+else ifneq ($(TECTONIC),)
+	tectonic main.tex && mv main.pdf report.pdf
+else ifneq ($(PDFLATEX),)
+	pdflatex -jobname=report -interaction=scrollmode main.tex
+else
+	$(error No LaTeX compiler found: install latexmk, tectonic, or pdflatex)
+endif

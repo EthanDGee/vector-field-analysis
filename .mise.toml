@@ -6,6 +6,10 @@ uv = "latest"
 "pipx:clang-tidy" = "22.1.0"
 "ubi:lycheeverse/lychee" = "latest"
 
+# =============================================================================
+# Setup
+# =============================================================================
+
 [tasks.deps]
 description = "Install system dependencies (HDF5, OpenMPI, cppcheck)"
 run = """
@@ -20,6 +24,10 @@ else
     exit 1
 fi
 """
+
+# =============================================================================
+# Build
+# =============================================================================
 
 [tasks.configure]
 description = "Configure CMake build"
@@ -39,6 +47,34 @@ run = "cmake --build build --target analyzer"
 description = "Build simulator"
 depends = ["configure"]
 run = "cmake --build build --target simulator"
+
+[tasks."build:sanitize"]
+description = "Build with AddressSanitizer + UBSanitizer"
+run = """
+cmake -B build-sanitize -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  '-DCMAKE_CXX_FLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer' \
+  '-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined'
+cmake --build build-sanitize
+"""
+
+[tasks."build:coverage"]
+description = "Build with coverage instrumentation"
+run = """
+cmake -B build-coverage -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  '-DCMAKE_CXX_FLAGS=--coverage' \
+  '-DCMAKE_EXE_LINKER_FLAGS=--coverage'
+cmake --build build-coverage
+"""
+
+# =============================================================================
+# Test
+# =============================================================================
 
 [tasks.test]
 description = "Run all tests"
@@ -60,6 +96,26 @@ description = "Run simulator tests"
 depends = ["build"]
 run = "ctest --test-dir build --output-on-failure -R simulator"
 
+[tasks."test:sanitize"]
+description = "Test with AddressSanitizer + UBSanitizer"
+depends = ["build:sanitize"]
+run = "ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 ctest --test-dir build-sanitize --output-on-failure"
+
+[tasks."test:coverage"]
+description = "Run tests and generate coverage report"
+depends = ["build:coverage"]
+run = """
+ctest --test-dir build-coverage --output-on-failure
+uvx gcovr -r . build-coverage/ \
+  --filter 'bins/.*' \
+  --filter 'libs/.*' \
+  --print-summary
+"""
+
+# =============================================================================
+# Run
+# =============================================================================
+
 [tasks."run:simulator"]
 description = "Build and run the simulator"
 depends = ["build:simulator"]
@@ -75,10 +131,17 @@ description = "Full pipeline: build, simulate, benchmark all solvers, then visua
 depends = ["run:analyzer"]
 run = "uv run tools/visualize.py data/${STEM:-karman_street_128x64}/field.h5 --streams data/${STEM:-karman_street_128x64}/streams.h5"
 
-[tasks."run:analyzer:mpi"]
-description = "Run MPI analyzer (NRANKS defaults to 4)"
-depends = ["build:analyzer", "run:simulator"]
-run = "mpirun -n ${MPI_RANKS:-4} --oversubscribe ./build/bins/analyzer/analyzer configs/karman_street_128x64.toml"
+# =============================================================================
+# Visualize / Stats
+# =============================================================================
+
+[tasks.visualize]
+description = "Visualize field.h5 with quiver plot"
+run = "uv run tools/visualize.py data/${STEM:-karman_street_128x64}/field.h5"
+
+[tasks."visualize:streams"]
+description = "Visualize field.h5 with streamlines overlaid"
+run = "uv run tools/visualize.py data/${STEM:-karman_street_128x64}/field.h5 --streams data/${STEM:-karman_street_128x64}/streams.h5"
 
 [tasks.stats]
 description = "Print stats for field.h5 and field.streams.h5"
@@ -92,13 +155,9 @@ run = "uv run tools/stats.py data/${STEM:-karman_street_128x64}/field.h5"
 description = "Print stats for field.streams.h5"
 run = "uv run tools/stats.py data/${STEM:-karman_street_128x64}/streams.h5"
 
-[tasks.visualize]
-description = "Visualize field.h5 with quiver plot"
-run = "uv run tools/visualize.py data/${STEM:-karman_street_128x64}/field.h5"
-
-[tasks."visualize:streams"]
-description = "Visualize field.h5 with streamlines overlaid"
-run = "uv run tools/visualize.py data/${STEM:-karman_street_128x64}/field.h5 --streams data/${STEM:-karman_street_128x64}/streams.h5"
+# =============================================================================
+# Quality
+# =============================================================================
 
 [tasks.format]
 description = "Format all source files in place"
@@ -149,45 +208,21 @@ lychee --verbose --no-progress --exclude math.nist.gov README.md docs/ tools/ .g
 # math.nist.gov/oommf: upstream server returns 404 (not our problem)
 """
 
-[tasks."build:sanitize"]
-description = "Build with AddressSanitizer + UBSanitizer"
-run = """
-cmake -B build-sanitize -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-  '-DCMAKE_CXX_FLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer' \
-  '-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined'
-cmake --build build-sanitize
-"""
+# =============================================================================
+# Report
+# =============================================================================
 
-[tasks."test:sanitize"]
-description = "Test with AddressSanitizer + UBSanitizer"
-depends = ["build:sanitize"]
-run = "ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 ctest --test-dir build-sanitize --output-on-failure"
+[tasks."report:build"]
+description = "Build the LaTeX report PDF"
+run = "make -C report"
 
-[tasks."build:coverage"]
-description = "Build with coverage instrumentation"
-run = """
-cmake -B build-coverage -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-  '-DCMAKE_CXX_FLAGS=--coverage' \
-  '-DCMAKE_EXE_LINKER_FLAGS=--coverage'
-cmake --build build-coverage
-"""
+[tasks."report:clean"]
+description = "Clean LaTeX report build artifacts"
+run = "make -C report clean"
 
-[tasks."test:coverage"]
-description = "Run tests and generate coverage report"
-depends = ["build:coverage"]
-run = """
-ctest --test-dir build-coverage --output-on-failure
-uvx gcovr -r . build-coverage/ \
-  --filter 'bins/.*' \
-  --filter 'libs/.*' \
-  --print-summary
-"""
+# =============================================================================
+# CI
+# =============================================================================
 
 [tasks.ci]
 description = "Full CI pipeline"
@@ -200,8 +235,29 @@ depends = [
   "test",
   "lint",
   "test:coverage",
+  "report:build",
 ]
 
+# =============================================================================
+# Clean
+# =============================================================================
+
+[tasks."clean:build"]
+description = "Remove main build directory"
+run = "rm -rf build"
+
+[tasks."clean:sanitize"]
+description = "Remove sanitizer build directory"
+run = "rm -rf build-sanitize"
+
+[tasks."clean:coverage"]
+description = "Remove coverage build directory and data"
+run = "rm -rf build-coverage coverage.info"
+
+[tasks."clean:data"]
+description = "Remove simulator output data"
+run = "rm -rf data/ *.h5 *.pkl"
+
 [tasks.clean]
-description = "Remove build artifacts"
-run = "rm -rf build build-sanitize build-coverage coverage.info data/ *.h5 *.pkl"
+description = "Remove all build artifacts"
+depends = ["clean:build", "clean:sanitize", "clean:coverage", "clean:data", "report:clean"]

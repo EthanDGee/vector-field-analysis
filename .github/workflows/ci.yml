@@ -158,3 +158,28 @@ jobs:
 
       - name: Check links
         run: mise run links
+
+  latex:
+    name: Build LaTeX Report
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install mise
+        uses: jdx/mise-action@v2
+
+      - name: Install tectonic
+        uses: wtfjoke/setup-tectonic@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build PDF
+        run: mise run report:build
+
+      - name: Upload PDF
+        uses: actions/upload-artifact@v4
+        with:
+          name: report
+          path: report/report.pdf
