@@ -38,12 +38,12 @@ class Grid {
 
     // allows solver to inject complete streamline result directly
     void setPrecomputedStreamlines(std::vector<Path> paths) {
-      precomputedStreamlines_ = std::move(paths);
-      hasPrecomputedStreamlines_ = true;
+        precomputedStreamlines_ = std::move(paths);
+        hasPrecomputedStreamlines_ = true;
     }
 
     [[nodiscard]] bool hasPrecomputedStreamlines() const {
-      return hasPrecomputedStreamlines_;
+        return hasPrecomputedStreamlines_;
     }
 
     // Returns the grid cell (row, col) that the vector at (row, col) points
