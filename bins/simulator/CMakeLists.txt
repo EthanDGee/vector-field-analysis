@@ -14,6 +14,10 @@ target_link_libraries(simulator_lib
 
 add_executable(simulator src/main.cpp)
 
-target_link_libraries(simulator PRIVATE simulator_lib utils)
+target_link_libraries(simulator PRIVATE 
+    simulator_lib 
+    utils
+    stdc++fs
+  )
 
 add_subdirectory(tests)
