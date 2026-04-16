@@ -42,9 +42,7 @@ class Grid {
         hasPrecomputedStreamlines_ = true;
     }
 
-    [[nodiscard]] bool hasPrecomputedStreamlines() const {
-        return hasPrecomputedStreamlines_;
-    }
+    [[nodiscard]] bool hasPrecomputedStreamlines() const { return hasPrecomputedStreamlines_; }
 
     // Returns the grid cell (row, col) that the vector at (row, col) points
     // toward. Read-only; safe to call from multiple threads simultaneously.
