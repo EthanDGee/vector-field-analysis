@@ -1,5 +1,14 @@
+option(ENABLE_CUDA "Build analyzer CUDA solver" ON)
+
+if(ENABLE_CUDA)
+  enable_language(CUDA)
+  find_package(CUDAToolkit REQUIRED)
+endif()
+
 add_library(analyzer_lib STATIC
     src/configParser.cpp
+    src/fieldReader.cpp
+    src/mainHelpers.cpp
     src/mpiStreamlineSolver.cpp
     src/openMpStreamlineSolver.cpp
     src/pthreadsStreamlineSolver.cpp
@@ -8,14 +17,41 @@ add_library(analyzer_lib STATIC
     src/streamWriter.cpp
 )
 
+if(ENABLE_CUDA)
+  target_sources(analyzer_lib PRIVATE
+                 src/cudaStreamlineSolver.cu
+               )
+endif()
+
 target_include_directories(analyzer_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(analyzer_lib
-    PUBLIC  field field_io
-    PRIVATE utils HighFive tomlplusplus::tomlplusplus
+target_link_libraries(analyzer_lib 
+  PUBLIC  
+    field 
+    field_io
+    HighFive
+                      
+  PRIVATE 
+    utils
+    tomlplusplus::tomlplusplus
 )
+
+if(ENABLE_CUDA)
+  target_link_libraries(analyzer_lib PUBLIC
+                        CUDA::cudart 
+  )
+  target_compile_definitions(analyzer_lib PUBLIC
+                             ENABLE_CUDA_SOLVER=1
+  )
+  set_target_properties(analyzer_lib PROPERTIES 
+                        CUDA_SEPARABLE_COMPILATION ON
+                        CUDA_STANDARD 17
+                        CUDA_STANDARD_REQUIRED ON
+                        CUDA_ARCHITECTURES native
+  )
+endif()
 
 find_package(MPI)
 if(MPI_FOUND)
@@ -30,7 +66,9 @@ if(OpenMP_FOUND)
 endif()
 
 add_executable(analyzer src/main.cpp)
-
-target_link_libraries(analyzer PRIVATE analyzer_lib utils)
+target_link_libraries(analyzer PRIVATE 
+                      analyzer_lib 
+                      utils
+                     )
 
 add_subdirectory(tests)
