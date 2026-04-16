@@ -7,6 +7,7 @@
 #include "sequentialStreamlineSolver.hpp"
 
 #ifdef ENABLE_CUDA_SOLVER
+#include "cudaFullStreamlineSolver.hpp"
 #include "cudaStreamlineSolver.hpp"
 #endif
 
@@ -31,6 +32,9 @@ std::unique_ptr<StreamlineSolver> makeSolver(std::string_view name, unsigned int
 #ifdef ENABLE_CUDA_SOLVER
     if (name == "cuda") {
         return std::make_unique<CudaStreamlineSolver>();
+    }
+    if (name == "cuda_full") {
+      return std::make_unique<CudaFullStreamlineSolver>();
     }
 #endif
     if (name == "mpi") {
