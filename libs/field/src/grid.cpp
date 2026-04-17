@@ -19,16 +19,21 @@ void Grid::initializeSuccessors() {
         throw std::runtime_error("Can't properly initialize zero-width field");
     }
 
+    successor.assign(static_cast<std::size_t>(rowCount),
+                     std::vector<std::size_t>(static_cast<std::size_t>(colCount)));
+
     for (int i = 0; i < rowCount; i++) {
         for (int j = 0; j < colCount; j++) {
-            successor[i][j] = coordsToIndex(i, j);
+            successor[static_cast<std::size_t>(i)][static_cast<std::size_t>(j)] =
+                coordsToIndex(static_cast<std::size_t>(i), static_cast<std::size_t>(j));
         }
     }
 }
 
 // converts a given coordinate into a unique index so that it can be looked up in a disjoint set
-size_t Grid::coordsToIndex(size_t row, size_t col) {
-    return (field_.size() * row) + col;
+std::size_t Grid::coordsToIndex(std::size_t row, std::size_t col) {
+    const std::size_t colCount = field_.empty() ? 0 : field_[0].size();
+    return (row * colCount) + col;
 }
 
 GridCell Grid::downstreamCell(int row, int col) const {
@@ -70,18 +75,22 @@ GridCell Grid::downstreamCell(GridCell coords) const {
     return downstreamCell(coords.row, coords.col);
 }
 
-void Grid::joinStreamlines(const std::shared_ptr<Streamline>& start,
-                           const std::shared_ptr<Streamline>& end) {
-    if (!start || !end || start == end || start->getPath().empty()) {
+void Grid::joinStreamlines(std::shared_ptr<Streamline> start,
+                           std::shared_ptr<Streamline> end) {
+    if (!start || !end) {
         return;
     }
 
-    // Absorb end's path into start and redirect all stream entries at those positions
-    for (const auto& point : end->getPath()) {
-        start->appendPoint(point);
-        streamlines_[static_cast<std::size_t>(point.row)][static_cast<std::size_t>(point.col)] =
-            start;
+    auto rootStart = start->resolve();
+    auto rootEnd = end->resolve();
+
+    if (rootStart == rootEnd || rootEnd->getPath().empty()) {
+        return;
     }
+
+    // O(1) merge: transfers the entire list from end to start.
+    rootStart->absorb(*rootEnd);
+    rootEnd->parent = rootStart;
 }
 
 // Greedy one-step forward trace: extend src's streamline to dest, or merge the
@@ -98,22 +107,23 @@ void Grid::traceStreamlineStep(GridCell src, GridCell dest) {
         throw std::out_of_range("traceStreamlineStep: cell coordinates out of grid bounds");
     }
 
-    auto& srcStream =
+    auto& srcSlot =
         streamlines_[static_cast<std::size_t>(src.row)][static_cast<std::size_t>(src.col)];
-    if (srcStream == nullptr) {
-        srcStream = std::make_shared<Streamline>(src);
+    if (srcSlot == nullptr) {
+        srcSlot = std::make_shared<Streamline>(src);
     }
+    auto srcStream = srcSlot->resolve();
 
-    auto& destStream =
+    auto& destSlot =
         streamlines_[static_cast<std::size_t>(dest.row)][static_cast<std::size_t>(dest.col)];
-    if (destStream == nullptr) {
+    if (destSlot == nullptr) {
         // Destination is unclaimed: extend the source's streamline into it.
-        destStream = srcStream;
+        destSlot = srcStream;
         srcStream->appendPoint(dest);
     } else {
         // Destination already belongs to another streamline: the two lines
         // converge here, so merge them into one.
-        joinStreamlines(destStream, srcStream);
+        joinStreamlines(srcStream, destSlot);
     }
 }
 
@@ -126,8 +136,11 @@ std::vector<Path> Grid::getStreamlines() const {
     std::vector<Path> result;
     for (const auto& row : streamlines_) {
         for (const auto& cell : row) {
-            if (cell && seen.insert(cell.get()).second) {
-                result.push_back(cell->getPath());
+            if (cell) {
+                auto root = cell->resolve();
+                if (!root->getPath().empty() && seen.insert(root.get()).second) {
+                    result.push_back(root->getPath());
+                }
             }
         }
     }

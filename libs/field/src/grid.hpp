@@ -15,7 +15,7 @@ namespace Field {
 class Grid {
     const Bounds bounds_;
     Slice field_;
-    std::vector<std::vector<size_t>> successor;
+    std::vector<std::vector<std::size_t>> successor;
     std::vector<std::vector<std::shared_ptr<Streamline>>> streamlines_;
 
     // for externally computed streamline result
@@ -35,7 +35,7 @@ class Grid {
         initializeSuccessors();
     }
 
-    size_t coordsToIndex(size_t row, size_t col);
+    std::size_t coordsToIndex(std::size_t row, std::size_t col);
     void initializeSuccessors();
 
     [[nodiscard]] std::size_t rows() const { return field_.size(); }
@@ -61,8 +61,8 @@ class Grid {
     // references. Null or self-merge arguments are silently ignored -- they
     // represent degenerate cases (uninitialized cell, vector pointing back to
     // itself) that produce no path.
-    void joinStreamlines(const std::shared_ptr<Streamline>& start,
-                         const std::shared_ptr<Streamline>& end);
+    void joinStreamlines(std::shared_ptr<Streamline> start,
+                         std::shared_ptr<Streamline> end);
 
     // Applies one streamline step: src extends toward dest (or merges if dest
     // is already claimed). NOT thread-safe -- call from one thread at a time.
