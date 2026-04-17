@@ -63,6 +63,12 @@ AnalyzerConfig parseAnalyzer(const std::string& path) {
             config.threadCount = static_cast<unsigned int>(*threadCount);
         }
     }
+    if (const auto blockSize = (*analyzer)["cuda_block_size"].value<int64_t>()) {
+        config.cudaBlockSize = static_cast<unsigned int>(*blockSize);
+    }
+    if (const auto output = (*analyzer)["output"].value<std::string>()) {
+        config.output = *output;
+    }
 
     return config;
 }

@@ -7,13 +7,17 @@
 // Defaults match single-process benchmark-all behaviour.
 // Single source of truth for valid solver names.
 // configParser.cpp and solverFactory.cpp both reference this.
-inline constexpr std::array<std::string_view, 7> kValidSolvers = {
-    "sequential", "openmp", "pthreads", "mpi", "cuda", "cuda_full", "all"};
+inline constexpr std::array<std::string_view, 6> kValidSolvers = {
+    "sequential", "openmp", "pthreads", "mpi", "cuda_full", "all"};
 
 // Input/output paths are derived from the config filename stem at runtime -- not stored here.
 struct AnalyzerConfig {
     // Must be one of kValidSolvers.
     std::string solver = "all";
-    // Thread count for the Pthreads solver.  0 = hardware_concurrency.
+    // Thread count for the Pthreads/OpenMP/MPI solvers. 0 = hardware_concurrency.
     unsigned int threadCount = 0;
+    // CUDA block size (threads per block) for the cuda_full solver.
+    unsigned int cudaBlockSize = 256;
+    // Output path for the streams HDF5 file. Empty = derive from config filename stem.
+    std::string output;
 };

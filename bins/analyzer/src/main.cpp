@@ -131,19 +131,27 @@ static unsigned int resolveThreadCount(unsigned int requested) {
     return hw > 0 ? hw : 1;
 }
 
-static void runAll(const Field::TimeSeries& field, unsigned int threadCount, int mpiRank,
-                   int mpiSize, const std::string& outPath) {
+static void runAll(const Field::TimeSeries& field, unsigned int threadCount,
+                   [[maybe_unused]] unsigned int cudaBlockSize, int mpiRank, int mpiSize,
+                   const std::string& outPath) {
     // Non-MPI solvers run only on rank 0.
     RunResult sequentialResult{};
     RunResult openmpResult{};
     RunResult pthreadsResult{};
+#ifdef ENABLE_CUDA_SOLVER
+    RunResult cudaFullResult{};
+#endif
     if (mpiRank == 0) {
-        auto sequentialSolver = makeSolver("sequential", threadCount);
-        auto openmpSolver = makeSolver("openmp", threadCount);
-        auto pthreadsSolver = makeSolver("pthreads", threadCount);
+        auto sequentialSolver = makeSolver("sequential", threadCount, cudaBlockSize);
+        auto openmpSolver = makeSolver("openmp", threadCount, cudaBlockSize);
+        auto pthreadsSolver = makeSolver("pthreads", threadCount, cudaBlockSize);
         sequentialResult = runSolver(*sequentialSolver, field);
         openmpResult = runSolver(*openmpSolver, field);
         pthreadsResult = runSolver(*pthreadsSolver, field);
+#ifdef ENABLE_CUDA_SOLVER
+        auto cudaFullSolver = makeSolver("cuda_full", threadCount, cudaBlockSize);
+        cudaFullResult = runSolver(*cudaFullSolver, field);
+#endif
     }
 
     // MPI solver: all ranks must participate (collective calls inside).
@@ -151,7 +159,7 @@ static void runAll(const Field::TimeSeries& field, unsigned int threadCount, int
     RunResult mpiResult{};
     const bool runMpi = mpiSize > 1;
     if (runMpi) {
-        auto mpi = makeSolver("mpi", threadCount);
+        auto mpi = makeSolver("mpi", threadCount, cudaBlockSize);
         mpiResult = runSolver(*mpi, field);
     }
 
@@ -160,10 +168,18 @@ static void runAll(const Field::TimeSeries& field, unsigned int threadCount, int
         const std::string openmpLabel = "openmp (" + std::to_string(threadCount) + " thr)";
         const std::string pthreadsLabel = "pthreads (" + std::to_string(threadCount) + " thr)";
         const std::string mpiLabel = "mpi (" + std::to_string(mpiSize) + " rank(s))";
+#ifdef ENABLE_CUDA_SOLVER
+        const std::string cudaFullLabel = "cuda_full (blk=" + std::to_string(cudaBlockSize) + ")";
+#endif
 
-        int labelWidth = static_cast<int>(std::max({sequentialLabel.size(), openmpLabel.size(),
-                                                    pthreadsLabel.size(), mpiLabel.size()})) +
-                         2;
+        std::vector<std::size_t> labelSizes = {sequentialLabel.size(), openmpLabel.size(),
+                                               pthreadsLabel.size(), mpiLabel.size()};
+#ifdef ENABLE_CUDA_SOLVER
+        labelSizes.push_back(cudaFullLabel.size());
+#endif
+
+        int labelWidth = static_cast<int>(*std::max_element(labelSizes.begin(), labelSizes.end())) + 2;
+
         std::cout << std::left << std::setw(labelWidth) << sequentialLabel
                   << sequentialResult.elapsedMilliseconds << " ms\n"
                   << std::setw(labelWidth) << openmpLabel << openmpResult.elapsedMilliseconds
@@ -181,6 +197,18 @@ static void runAll(const Field::TimeSeries& field, unsigned int threadCount, int
                                 pthreadsResult.elapsedMilliseconds
                           : 0.0)
                   << "x vs sequential)\n";
+
+#ifdef ENABLE_CUDA_SOLVER
+        std::cout << std::setw(labelWidth) << cudaFullLabel << cudaFullResult.elapsedMilliseconds
+                  << " ms"
+                  << "  ("
+                  << (cudaFullResult.elapsedMilliseconds > 0
+                          ? sequentialResult.elapsedMilliseconds /
+                                cudaFullResult.elapsedMilliseconds
+                          : 0.0)
+                  << "x vs sequential)\n";
+#endif
+
         if (runMpi) {
             std::cout << std::setw(labelWidth) << mpiLabel << mpiResult.elapsedMilliseconds << " ms"
                       << "  ("
@@ -194,6 +222,9 @@ static void runAll(const Field::TimeSeries& field, unsigned int threadCount, int
 
         verify(sequentialResult.streams, openmpResult.streams, "openmp");
         verify(sequentialResult.streams, pthreadsResult.streams, "pthreads");
+#ifdef ENABLE_CUDA_SOLVER
+        verify(sequentialResult.streams, cudaFullResult.streams, "cuda_full");
+#endif
         if (runMpi) {
             verify(sequentialResult.streams, mpiResult.streams, "mpi");
         }
@@ -203,14 +234,20 @@ static void runAll(const Field::TimeSeries& field, unsigned int threadCount, int
 }
 
 static void runOne(const std::string& solverName, const Field::TimeSeries& field,
-                   unsigned int threadCount, int mpiRank, int mpiSize, const std::string& outPath) {
+                   unsigned int threadCount, [[maybe_unused]] unsigned int cudaBlockSize, int mpiRank,
+                   int mpiSize, const std::string& outPath) {
     RunResult result{};
     if (solverName == "mpi") {
-        auto solver = makeSolver(solverName, threadCount);
+        auto solver = makeSolver(solverName, threadCount, cudaBlockSize);
         result = runSolver(*solver, field);
     } else if (mpiRank == 0) {
-        auto solver = makeSolver(solverName, threadCount);
-        result = runSolver(*solver, field);
+        if (solverName == "cuda_full") {
+            auto solver = makeSolver(solverName, threadCount, cudaBlockSize);
+            result = runSolver(*solver, field);
+        } else {
+            auto solver = makeSolver(solverName, threadCount, cudaBlockSize);
+            result = runSolver(*solver, field);
+        }
     } else {
         // Non-zero ranks: completed collective role in runSolver(); only rank 0 writes output.
         return;
@@ -222,6 +259,8 @@ static void runOne(const std::string& solverName, const Field::TimeSeries& field
             label += " (" + std::to_string(threadCount) + " thr)";
         } else if (solverName == "mpi") {
             label += " (" + std::to_string(mpiSize) + " rank(s))";
+        } else if (solverName == "cuda_full") {
+            label += " (blk=" + std::to_string(cudaBlockSize) + ")";
         }
         std::cout << label << "  " << result.elapsedMilliseconds << " ms\n";
 
@@ -273,8 +312,15 @@ int main(int argc, char* argv[]) {
         const AnalyzerConfig config = ConfigParser::parseAnalyzer(argv[1]);
         const std::string stem = std::filesystem::path(argv[1]).stem().string();
         const std::string fieldPath = "data/" + stem + "/field.h5";
-        const std::string outPath = "data/" + stem + "/streams.h5";
-        std::filesystem::create_directories("data/" + stem);
+        const std::string outPath =
+            config.output.empty() ? "data/" + stem + "/streams.h5" : config.output;
+        
+        // Ensure parent directory for output exists
+        std::filesystem::path outParent = std::filesystem::path(outPath).parent_path();
+        if (!outParent.empty()) {
+            std::filesystem::create_directories(outParent);
+        }
+
         const Field::TimeSeries field = FieldReader::read(fieldPath);
 
         if (field.frames.empty()) {
@@ -289,6 +335,8 @@ int main(int argc, char* argv[]) {
             threadCount = static_cast<unsigned int>(mpiSize);
         }
 
+        const unsigned int cudaBlockSize = config.cudaBlockSize;
+
         if (mpiRank == 0) {
             const int numSteps = static_cast<int>(field.frames.size());
             const auto [width, height] = field.gridSize();
@@ -300,9 +348,9 @@ int main(int argc, char* argv[]) {
         }
 
         if (config.solver == "all") {
-            runAll(field, threadCount, mpiRank, mpiSize, outPath);
+            runAll(field, threadCount, cudaBlockSize, mpiRank, mpiSize, outPath);
         } else {
-            runOne(config.solver, field, threadCount, mpiRank, mpiSize, outPath);
+            runOne(config.solver, field, threadCount, cudaBlockSize, mpiRank, mpiSize, outPath);
         }
     } catch (const std::exception& e) {
         if (mpiRank == 0) {
@@ -322,3 +370,4 @@ int main(int argc, char* argv[]) {
 #endif
     return 0;
 }
+

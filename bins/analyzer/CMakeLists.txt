@@ -15,7 +15,6 @@ add_library(analyzer_lib STATIC
     src/solverFactory.cpp
     src/streamlineSolver.cpp
     src/streamWriter.cpp
-    src/timing.cpp
 )
 
 if(ENABLE_CUDA)

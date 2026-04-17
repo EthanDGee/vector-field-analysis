@@ -17,9 +17,9 @@
 #include <string_view>
 
 // "all" is handled by main.cpp before makeSolver is called.
-static_assert(kValidSolvers.size() == 7, "kValidSolvers changed -- update makeSolver() to match");
+static_assert(kValidSolvers.size() == 6, "kValidSolvers changed -- update makeSolver() to match");
 
-std::unique_ptr<StreamlineSolver> makeSolver(std::string_view name, unsigned int threadCount) {
+std::unique_ptr<StreamlineSolver> makeSolver(std::string_view name, unsigned int threadCount, unsigned int cudaBlockSize) {
     if (name == "sequential") {
         return std::make_unique<SequentialStreamlineSolver>();
     }
@@ -30,11 +30,8 @@ std::unique_ptr<StreamlineSolver> makeSolver(std::string_view name, unsigned int
         return std::make_unique<PthreadsStreamlineSolver>(threadCount);
     }
 #ifdef ENABLE_CUDA_SOLVER
-    if (name == "cuda") {
-        return std::make_unique<CudaStreamlineSolver>();
-    }
     if (name == "cuda_full") {
-        return std::make_unique<CudaFullStreamlineSolver>();
+        return std::make_unique<CudaFullStreamlineSolver>(cudaBlockSize);
     }
 #endif
     if (name == "mpi") {

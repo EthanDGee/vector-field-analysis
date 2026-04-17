@@ -8,5 +8,5 @@
 // name must be one of: "sequential", "openmp", "pthreads", "mpi".
 // threadCount is forwarded to Pthreads (ignored by other implementations).
 // Throws std::runtime_error for unknown names.
-[[nodiscard]] std::unique_ptr<StreamlineSolver> makeSolver(std::string_view name,
-                                                           unsigned int threadCount);
+[[nodiscard]] std::unique_ptr<StreamlineSolver>
+makeSolver(std::string_view name, unsigned int threadCount, unsigned int cudaBlockSize);

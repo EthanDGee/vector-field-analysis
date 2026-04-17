@@ -38,9 +38,9 @@ fi
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 
-echo "==> Building..."
-if ! cmake -B "$PROJECT_DIR/build" -DCMAKE_BUILD_TYPE=Release -S "$PROJECT_DIR" \
-     > /dev/null 2>&1; then
+echo "==> Building (with CUDA enabled)..."
+if ! cmake -B "$PROJECT_DIR/build" -DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=ON -S "$PROJECT_DIR" \
+  >/dev/null 2>&1; then
   echo "ERROR: CMake configure failed. Aborting." >&2
   exit 1
 fi
@@ -64,8 +64,8 @@ for stem in "${STEMS[@]}"; do
 
   # Simulator
   if "$SIMULATOR" "$config" \
-       > "$out/simulator_stdout.txt" \
-       2> "$out/simulator_stderr.txt"; then
+    >"$out/simulator_stdout.txt" \
+    2>"$out/simulator_stderr.txt"; then
     SIM_STATUS[$stem]="OK"
     printf "    simulator  OK\n"
   else
@@ -80,18 +80,25 @@ for stem in "${STEMS[@]}"; do
   # Analyzer (Scaling Study)
   printf "    analyzer   scaling...\n"
   ANA_STATUS[$stem]="OK"
-  
+
   # Function to run a specific variant and extract timing
   run_variant() {
     local solver=$1
     local workers=$2
     local variant_name="${solver}_${workers}"
     local log_file="$out/analyzer_${variant_name}.txt"
+    local streams_out="$out/streams_${variant_name}.h5"
     
-    # Create a temp config to force the solver/thread count
-    local tmp_toml=$(mktemp)
-    sed '/^\[analyzer\]/,$d' "$config" > "$tmp_toml"
-    printf "\n[analyzer]\nsolver = \"%s\"\nthreads = %d\n" "$solver" "$workers" >> "$tmp_toml"
+    # Create a temp config named exactly after the stem so main.cpp finds data/<stem>/field.h5
+    local tmp_toml="${out}/${stem}.toml"
+    sed '/^\[analyzer\]/,$d' "$config" >"$tmp_toml"
+    
+    if [[ "$solver" == "cuda_full" ]]; then
+      # For cuda_full, 'workers' parameter is used as block size
+      printf "\n[analyzer]\nsolver = \"cuda_full\"\ncuda_block_size = %d\noutput = \"%s\"\n" "$workers" "$streams_out" >>"$tmp_toml"
+    else
+      printf "\n[analyzer]\nsolver = \"%s\"\nthreads = %d\noutput = \"%s\"\n" "$solver" "$workers" "$streams_out" >>"$tmp_toml"
+    fi
     
     local cmd=()
     if [[ "$solver" == "mpi" ]]; then
@@ -100,9 +107,11 @@ for stem in "${STEMS[@]}"; do
       cmd=("$ANALYZER" "$tmp_toml")
     fi
 
-    if "${cmd[@]}" > "$log_file" 2>&1; then
+    if "${cmd[@]}" >"$log_file" 2>&1; then
       local ms=$(grep -E "^[a-z_]+.*[0-9.]+ ms" "$log_file" | awk '{print $(NF-1)}')
       printf "      %-15s %10s ms\n" "$variant_name" "$ms"
+      # Link the last successful run to streams.h5 so stats/visualizer can find it
+      ln -sf "$(basename "$streams_out")" "$out/streams.h5"
       rm -f "$tmp_toml"
       return 0
     else
@@ -130,6 +139,11 @@ for stem in "${STEMS[@]}"; do
     run_variant "mpi" "$p" || ANA_STATUS[$stem]="FAIL"
   done
 
+  # CUDA Full (Block Size Scaling)
+  for block_size in 128 256 512; do
+    run_variant "cuda_full" "$block_size" || ANA_STATUS[$stem]="FAIL"
+  done
+
   if [[ "${ANA_STATUS[$stem]}" == "FAIL" ]]; then
     printf "    analyzer   FAIL (one or more variants failed)\n"
     STATS_STATUS[$stem]="SKIP"
@@ -139,8 +153,8 @@ for stem in "${STEMS[@]}"; do
 
   # Stats
   if uv run "$STATS" "$out/field.h5" "$out/streams.h5" \
-       > "$out/stats_stdout.txt" \
-       2> "$out/stats_stderr.txt"; then
+    >"$out/stats_stdout.txt" \
+    2>"$out/stats_stderr.txt"; then
     STATS_STATUS[$stem]="OK"
     printf "    stats      OK\n"
   else
@@ -150,10 +164,10 @@ for stem in "${STEMS[@]}"; do
 
   # Visualizer
   if uv run "$VISUALIZER" "$out/field.h5" \
-       --streams "$out/streams.h5" \
-       --save "$out/animation.gif" \
-       > "$out/visualizer_stdout.txt" \
-       2> "$out/visualizer_stderr.txt"; then
+    --streams "$out/streams.h5" \
+    --save "$out/animation.gif" \
+    >"$out/visualizer_stdout.txt" \
+    2>"$out/visualizer_stderr.txt"; then
     VIS_STATUS[$stem]="OK"
     printf "    visualizer OK\n"
   else
