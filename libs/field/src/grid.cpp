@@ -2,10 +2,34 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <stdexcept>
 #include <unordered_set>
 
 namespace Field {
+
+// initialize all vectors to start out as their own successors
+void Grid::initializeSuccessors() {
+    const int rowCount = static_cast<int>(field_.size());
+    if (rowCount == 0) {
+        throw std::runtime_error("Can't properly initialize empty field");
+    }
+    const int colCount = static_cast<int>(field_[0].size());
+    if (colCount == 0) {
+        throw std::runtime_error("Can't properly initialize zero-width field");
+    }
+
+    for (int i = 0; i < rowCount; i++) {
+        for (int j = 0; j < colCount; j++) {
+            successor[i][j] = coordsToIndex(i, j);
+        }
+    }
+}
+
+// converts a given coordinate into a unique index so that it can be looked up in a disjoint set
+size_t Grid::coordsToIndex(size_t row, size_t col) {
+    return (field_.size() * row) + col;
+}
 
 GridCell Grid::downstreamCell(int row, int col) const {
     const int rowCount = static_cast<int>(field_.size());

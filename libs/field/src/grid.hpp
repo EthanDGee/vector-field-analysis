@@ -2,6 +2,7 @@
 #include "fieldTypes.hpp"
 #include "streamline.hpp"
 
+#include <cstddef>
 #include <memory>
 #include <vector>
 
@@ -14,6 +15,7 @@ namespace Field {
 class Grid {
     const Bounds bounds_;
     Slice field_;
+    std::vector<std::vector<size_t>> successor;
     std::vector<std::vector<std::shared_ptr<Streamline>>> streamlines_;
 
     // for externally computed streamline result
@@ -28,7 +30,13 @@ class Grid {
         const std::size_t numRows = field_.size();
         const std::size_t numCols = numRows > 0 ? field_[0].size() : 0;
         streamlines_.assign(numRows, std::vector<std::shared_ptr<Streamline>>(numCols, nullptr));
+
+        // initialize successors to allow for parralelized successor calculation.
+        initializeSuccessors();
     }
+
+    size_t coordsToIndex(size_t row, size_t col);
+    void initializeSuccessors();
 
     [[nodiscard]] std::size_t rows() const { return field_.size(); }
     [[nodiscard]] std::size_t cols() const { return field_.empty() ? 0 : field_[0].size(); }
