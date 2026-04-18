@@ -3,12 +3,17 @@ find_package(CUDAToolkit QUIET)
 option(ENABLE_CUDA "Build analyzer CUDA solver" ${CUDAToolkit_FOUND})
 
 if(ENABLE_CUDA)
-  # Default to common architectures so the build works on machines without a
-  # GPU (e.g. CI runners). For local dev, override with the GPU present:
+  # Default covers CHPC GPUs reachable with CUDA 11.5 (the CI toolkit):
+  #   sm_60/61 (kingspeak P100, lonepeak/kingspeak 1080Ti/TitanX/P40)
+  #   sm_70/75 (notchpeak V100/TitanV, T4/2080Ti)
+  #   sm_80/86 (notchpeak A100, A40/A6000/3090)
+  # sm_89/90 (granite L40S/H100/H200) require CUDA >= 11.8 and are only
+  # reachable on CHPC where native is used anyway.
+  # These are compile-check targets; production runs use native:
   #   cmake -B build -DCMAKE_CUDA_ARCHITECTURES=native
-  # benchmark.sh and enqueue.sh do this automatically for CHPC nodes.
+  # benchmark.sh and enqueue.sh set native automatically on CHPC nodes.
   if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-    set(CMAKE_CUDA_ARCHITECTURES 60 61 70 75 80 86 89 90)
+    set(CMAKE_CUDA_ARCHITECTURES 60 61 70 75 80 86)
   endif()
   enable_language(CUDA)
   find_package(CUDAToolkit REQUIRED)
@@ -83,9 +88,12 @@ endif()
 
 if(ENABLE_CUDA AND UNIX AND NOT APPLE)
     # On glibc 2.34+ (Ubuntu 22.04+), libpthread.a / libdl.a / librt.a are
-    # linker-script stubs that the host linker understands but nvlink cannot
-    # process during CUDA device linking. Replace any full-path .a stubs in
-    # the MPI and OpenMP imported targets with -l flags that nvlink accepts.
+    # linker-script stubs the host linker handles transparently but nvlink
+    # cannot process. CMake's FindMPI, FindOpenMP, and FindCUDAToolkit all
+    # inject full-path references to these stubs into their imported targets;
+    # CUDA::cudart_static is automatically pulled into every separable-
+    # compilation device link step. Replace each full-path .a stub with the
+    # equivalent -l flag, which nvlink silently skips as a host-only lib.
     function(_fix_glibc_stubs_for_nvlink tgt)
         if(NOT TARGET ${tgt})
             return()

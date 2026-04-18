@@ -53,6 +53,13 @@ detected; disabled gracefully when absent (e.g. on CPU-only CI runners).
 > **Note:** CUDA 11.5.1 does not officially support GCC 11. The build passes
 > `-allow-unsupported-compiler` to suppress the version check. The code itself
 > is valid C++17.
+>
+> **Note:** On glibc 2.34+ (Ubuntu 22.04+), `libpthread.a`, `libdl.a`, and
+> `librt.a` are linker-script stubs that nvlink cannot process during CUDA
+> separable compilation. CMake's `bins/analyzer/CMakeLists.txt` patches the
+> `INTERFACE_LINK_LIBRARIES` of `MPI::MPI_CXX`, `OpenMP::OpenMP_CXX`, and
+> `CUDA::cudart_static` to replace full-path `.a` stubs with `-l` flags,
+> which nvlink safely skips.
 
 ### cppcheck
 
