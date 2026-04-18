@@ -4,8 +4,8 @@
 # Configure via .env at the project root.
 #
 # Examples:
-#   ./scripts/chpc/enqueue.sh
-#   CHPC_GPU=v100:1 CUDA_ARCH=sm_70 CUDA_MODULE=cuda/11.6.2 ./scripts/chpc/enqueue.sh
+#   ./scripts/chpc/submit.sh
+#   CHPC_GPU=v100:1 CUDA_ARCH=sm_70 CUDA_MODULE=cuda/11.6.2 ./scripts/chpc/submit.sh
 
 set -euo pipefail
 

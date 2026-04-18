@@ -118,8 +118,8 @@ description = "Run MPI analyzer (MPI_RANKS defaults to nproc)"
 run = "make run-analyzer"
 
 [tasks."run:configs"]
-description = "Run all configs via scripts/run_configs.sh"
-run = "./scripts/run_configs.sh"
+description = "Run all configs via scripts/pipeline.sh"
+run = "./scripts/pipeline.sh"
 
 [tasks.demo]
 description = "Full pipeline: build, simulate, benchmark all solvers, stats, then visualize; tees output to data/<STEM>/"

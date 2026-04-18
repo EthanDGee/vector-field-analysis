@@ -4,8 +4,8 @@
 # Run from the project root.
 #
 # Usage:
-#   scripts/run_configs.sh                    # run all configs in configs/
-#   scripts/run_configs.sh vortex hurricane   # run only named stems
+#   scripts/pipeline.sh                    # run all configs in configs/
+#   scripts/pipeline.sh vortex hurricane   # run only named stems
 
 set -uo pipefail
 
@@ -56,6 +56,7 @@ echo
 declare -A SIM_STATUS ANA_STATUS STATS_STATUS VIS_STATUS
 
 for stem in "${STEMS[@]}"; do
+  export STEM="$stem"
   config="$CONFIGS_DIR/$stem.toml"
   out="$DATA_DIR/$stem"
   mkdir -p "$out"

@@ -43,16 +43,31 @@ target_include_directories(analyzer_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(analyzer_lib
-  PUBLIC
-    field
-    field_io
-    HighFive
-
-  PRIVATE
-    utils
-    tomlplusplus::tomlplusplus
-)
+if(ENABLE_CUDA)
+  # Wrap every host-only dep in $<HOST_LINK:...> so nvlink does not receive
+  # their transitive glibc 2.34+ stub .a files (libpthread.a, libdl.a,
+  # librt.a) during the device link step. This covers HDF5 (via HighFive),
+  # MPI, OpenMP, and anything else that carries pthread/dl/rt dependencies.
+  target_link_libraries(analyzer_lib
+    PUBLIC
+      $<HOST_LINK:field>
+      $<HOST_LINK:field_io>
+      $<HOST_LINK:HighFive>
+    PRIVATE
+      $<HOST_LINK:utils>
+      $<HOST_LINK:tomlplusplus::tomlplusplus>
+  )
+else()
+  target_link_libraries(analyzer_lib
+    PUBLIC
+      field
+      field_io
+      HighFive
+    PRIVATE
+      utils
+      tomlplusplus::tomlplusplus
+  )
+endif()
 
 if(ENABLE_CUDA)
   target_link_libraries(analyzer_lib PUBLIC
@@ -78,39 +93,20 @@ find_package(MPI)
 if(MPI_FOUND)
     # USE_MPI must be PUBLIC so main.cpp (which links analyzer_lib) sees the definition.
     target_compile_definitions(analyzer_lib PUBLIC USE_MPI)
-    target_link_libraries(analyzer_lib PUBLIC MPI::MPI_CXX)
+    if(ENABLE_CUDA)
+        target_link_libraries(analyzer_lib PUBLIC $<HOST_LINK:MPI::MPI_CXX>)
+    else()
+        target_link_libraries(analyzer_lib PUBLIC MPI::MPI_CXX)
+    endif()
 endif()
 
 find_package(OpenMP)
 if(OpenMP_FOUND)
-    target_link_libraries(analyzer_lib PUBLIC OpenMP::OpenMP_CXX)
-endif()
-
-if(ENABLE_CUDA AND UNIX AND NOT APPLE)
-    # On glibc 2.34+ (Ubuntu 22.04+), libpthread.a / libdl.a / librt.a are
-    # linker-script stubs the host linker handles transparently but nvlink
-    # cannot process. CMake's FindMPI, FindOpenMP, and FindCUDAToolkit all
-    # inject full-path references to these stubs into their imported targets;
-    # CUDA::cudart_static is automatically pulled into every separable-
-    # compilation device link step. Replace each full-path .a stub with the
-    # equivalent -l flag, which nvlink silently skips as a host-only lib.
-    function(_fix_glibc_stubs_for_nvlink tgt)
-        if(NOT TARGET ${tgt})
-            return()
-        endif()
-        foreach(prop INTERFACE_LINK_LIBRARIES IMPORTED_LINK_INTERFACE_LIBRARIES)
-            get_target_property(libs ${tgt} ${prop})
-            if(libs)
-                string(REGEX REPLACE "[^;]*/libpthread\\.a" "-lpthread" libs "${libs}")
-                string(REGEX REPLACE "[^;]*/libdl\\.a"     "-ldl"      libs "${libs}")
-                string(REGEX REPLACE "[^;]*/librt\\.a"     "-lrt"      libs "${libs}")
-                set_target_properties(${tgt} PROPERTIES ${prop} "${libs}")
-            endif()
-        endforeach()
-    endfunction()
-    _fix_glibc_stubs_for_nvlink(MPI::MPI_CXX)
-    _fix_glibc_stubs_for_nvlink(OpenMP::OpenMP_CXX)
-    _fix_glibc_stubs_for_nvlink(CUDA::cudart_static)
+    if(ENABLE_CUDA)
+        target_link_libraries(analyzer_lib PUBLIC $<HOST_LINK:OpenMP::OpenMP_CXX>)
+    else()
+        target_link_libraries(analyzer_lib PUBLIC OpenMP::OpenMP_CXX)
+    endif()
 endif()
 
 add_executable(analyzer src/main.cpp)
