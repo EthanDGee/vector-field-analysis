@@ -72,7 +72,8 @@ run = "make build-coverage"
 
 [tasks.test]
 description = "Run all tests"
-run = "make test"
+depends = ["build"]
+run = "ctest --test-dir build --output-on-failure"
 
 [tasks."test:vector"]
 description = "Run vector library tests"
@@ -195,7 +196,7 @@ fi
 
 [tasks.lint]
 description = "Run clang-tidy on all source files"
-depends = ["configure"]
+depends = ["build"]
 run = "find bins libs -name '*.cpp' | xargs clang-tidy -p build --config-file=.clang-tidy --warnings-as-errors=*"
 
 [tasks.spell]
@@ -212,13 +213,11 @@ cppcheck --enable=all --error-exitcode=1 \
   --suppress=normalCheckLevelMaxBranches \
   "--suppress=unusedStructMember:bins/simulator/src/fieldGenerator.cpp" \
   "--suppress=knownConditionTrueFalse:bins/analyzer/src/main.cpp" \
-  "--suppress=duplicateCondition:bins/analyzer/src/main.cpp" \
   "--suppress=unusedFunction:libs/field/src/grid.hpp" \
   bins/ libs/
 # unusedStructMember: false positive -- RadialComponents members accessed via std::optional::operator->
 # normalCheckLevelMaxBranches: pthreads.cpp two-pass design exceeds branch analysis limit, not an error
 # knownConditionTrueFalse: intentional #ifdef USE_MPI pattern; always 0/1 in non-MPI build
-# duplicateCondition: false positive -- consecutive if (runParallel) blocks are separated by #ifdef guards and do different work
 # unusedFunction grid.hpp: bounds/field/setPrecomputedStreamlines used in .cu files cppcheck does not analyze
 """
 
