@@ -214,13 +214,11 @@ cppcheck --enable=all --error-exitcode=1 \
   "--suppress=knownConditionTrueFalse:bins/analyzer/src/main.cpp" \
   "--suppress=duplicateCondition:bins/analyzer/src/main.cpp" \
   "--suppress=unusedFunction:libs/field/src/grid.hpp" \
-  "--suppress=unusedFunction:bins/analyzer/src/timing.cpp" \
   bins/ libs/
 # unusedStructMember: false positive -- RadialComponents members accessed via std::optional::operator->
 # normalCheckLevelMaxBranches: pthreads.cpp two-pass design exceeds branch analysis limit, not an error
 # knownConditionTrueFalse: intentional #ifdef USE_MPI pattern; always 0/1 in non-MPI build
 # duplicateCondition: false positive -- consecutive if (runParallel) blocks are separated by #ifdef guards and do different work
-# unusedFunction timing.cpp: printTiming kept as a debug utility; not called in normal flow
 # unusedFunction grid.hpp: bounds/field/setPrecomputedStreamlines used in .cu files cppcheck does not analyze
 """
 
