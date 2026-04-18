@@ -11,8 +11,8 @@
 #include <cuda_runtime.h>
 
 static bool hasCudaDevice() {
-    int count = 0;
-    return cudaGetDeviceCount(&count) == cudaSuccess && count > 0;
+    // cudaFree(nullptr) forces full device initialization; fails if no usable compute device
+    return cudaFree(nullptr) == cudaSuccess;
 }
 #endif
 
