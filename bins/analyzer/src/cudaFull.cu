@@ -239,7 +239,8 @@ Result computeComponents(const Field::Slice& field, const Field::Bounds& bounds,
             if (rootToLabel[static_cast<std::size_t>(root)] == -1) {
                 rootToLabel[static_cast<std::size_t>(root)] = nextLabel++;
             }
-            componentId[static_cast<std::size_t>(idx)] = rootToLabel[static_cast<std::size_t>(root)];
+            componentId[static_cast<std::size_t>(idx)] =
+                rootToLabel[static_cast<std::size_t>(root)];
         }
 
         Result result;

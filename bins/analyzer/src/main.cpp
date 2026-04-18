@@ -141,10 +141,7 @@ static void runAll(const Field::TimeSeries& field, unsigned int threadCount,
                    [[maybe_unused]] unsigned int cudaFullBlockSize, int mpiRank, int mpiSize,
                    const std::string& outPath) {
     // Parallel solvers need at least 2 workers to add signal over sequential.
-    const bool runPthreads = threadCount > 1;
-#ifdef _OPENMP
-    const bool runOpenmp = threadCount > 1;
-#endif
+    const bool runParallel = threadCount > 1;
 #ifdef USE_MPI
     const bool runMpi = mpiSize > 1;
 #endif
@@ -163,12 +160,12 @@ static void runAll(const Field::TimeSeries& field, unsigned int threadCount,
         auto sequentialSolver = makeSolver("sequential", threadCount);
         sequentialResult = runSolver(*sequentialSolver, field);
 #ifdef _OPENMP
-        if (runOpenmp) {
+        if (runParallel) {
             auto openmpSolver = makeSolver("openmp", threadCount);
             openmpResult = runSolver(*openmpSolver, field);
         }
 #endif
-        if (runPthreads) {
+        if (runParallel) {
             auto pthreadsSolver = makeSolver("pthreads", threadCount);
             pthreadsResult = runSolver(*pthreadsSolver, field);
         }
@@ -194,12 +191,12 @@ static void runAll(const Field::TimeSeries& field, unsigned int threadCount,
         // Skip-message-only solvers don't need a label, so they don't affect labelWidth.
         const std::string sequentialLabel = "sequential";
         std::vector<std::size_t> labelSizes = {sequentialLabel.size()};
-        if (runPthreads) {
+        if (runParallel) {
             labelSizes.push_back(
                 std::string("pthreads (" + std::to_string(threadCount) + " thr)").size());
         }
 #ifdef _OPENMP
-        if (runOpenmp) {
+        if (runParallel) {
             labelSizes.push_back(
                 std::string("openmp (" + std::to_string(threadCount) + " thr)").size());
         }
@@ -229,7 +226,7 @@ static void runAll(const Field::TimeSeries& field, unsigned int threadCount,
                   << sequentialResult.elapsedMilliseconds << " ms\n";
 
 #ifdef _OPENMP
-        if (runOpenmp) {
+        if (runParallel) {
             printTiming("openmp (" + std::to_string(threadCount) + " thr)",
                         openmpResult.elapsedMilliseconds);
         } else {
@@ -239,7 +236,7 @@ static void runAll(const Field::TimeSeries& field, unsigned int threadCount,
         std::cout << "(openmp skipped -- not compiled with OpenMP support)\n";
 #endif
 
-        if (runPthreads) {
+        if (runParallel) {
             printTiming("pthreads (" + std::to_string(threadCount) + " thr)",
                         pthreadsResult.elapsedMilliseconds);
         } else {
@@ -267,11 +264,11 @@ static void runAll(const Field::TimeSeries& field, unsigned int threadCount,
         std::cout << "(cuda_full skipped -- rebuild with -DENABLE_CUDA=ON)\n";
 #endif
 
-        if (runPthreads) {
+        if (runParallel) {
             verify(sequentialResult.streams, pthreadsResult.streams, "pthreads");
         }
 #ifdef _OPENMP
-        if (runOpenmp) {
+        if (runParallel) {
             verify(sequentialResult.streams, openmpResult.streams, "openmp");
         }
 #endif

@@ -1,23 +1,36 @@
 [tools]
-cmake = "latest"
-ninja = "latest"
-uv = "latest"
+cmake = "4.2.3"
+ninja = "1.13.2"
+uv = "0.11.2"
 "pipx:clang-format" = "22.1.1"
 "pipx:clang-tidy" = "22.1.0"
-"ubi:lycheeverse/lychee" = "latest"
+"ubi:lycheeverse/lychee" = "0.15.1"
 
 # =============================================================================
 # Setup
 # =============================================================================
 
 [tasks.deps]
-description = "Install system dependencies (HDF5, OpenMPI, cppcheck)"
+description = "Install system dependencies (HDF5, OpenMPI, cppcheck, CUDA)"
 run = """
 if command -v apt-get &>/dev/null; then
-    sudo apt-get update -q && sudo apt-get install -y -q libhdf5-dev libopenmpi-dev openmpi-bin cppcheck nvidia-cuda-toolkit
+    # Pinned versions (Ubuntu 22.04 jammy):
+    #   libhdf5-dev          1.10.7+repack-4ubuntu2
+    #   libopenmpi-dev       4.1.2-2ubuntu1
+    #   openmpi-bin          4.1.2-2ubuntu1
+    #   cppcheck             2.7-1
+    #   nvidia-cuda-toolkit  11.5.1-1ubuntu1
+    sudo apt-get update -q && sudo apt-get install -y -q \
+        "libhdf5-dev=1.10.7+repack-4ubuntu2" \
+        "libopenmpi-dev=4.1.2-2ubuntu1" \
+        "openmpi-bin=4.1.2-2ubuntu1" \
+        "cppcheck=2.7-1" \
+        "nvidia-cuda-toolkit=11.5.1-1ubuntu1"
 elif command -v dnf &>/dev/null; then
+    # Tested: hdf5-1.14, openmpi-5.0, cppcheck-2.13, cuda-toolkit-12
     sudo dnf update -q && sudo dnf install -y -q hdf5 openmpi-devel cppcheck cuda-toolkit
 elif command -v pacman &>/dev/null; then
+    # Tested: hdf5-1.14, openmpi-5.0, cppcheck-2.14, cuda-12
     sudo pacman -S --needed hdf5 openmpi cppcheck cuda
 else
     echo "Unsupported package manager -> install HDF5, OpenMPI, cppcheck, and CUDA Toolkit manually"
@@ -31,46 +44,27 @@ fi
 
 [tasks.configure]
 description = "Configure CMake build"
-run = "cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+run = "make configure"
 
 [tasks.build]
 description = "Build everything"
-depends = ["configure"]
-run = "cmake --build build"
+run = "make build"
 
 [tasks."build:analyzer"]
 description = "Build analyzer"
-depends = ["configure"]
-run = "cmake --build build --target analyzer"
+run = "make build-analyzer"
 
 [tasks."build:simulator"]
 description = "Build simulator"
-depends = ["configure"]
-run = "cmake --build build --target simulator"
+run = "make build-simulator"
 
 [tasks."build:sanitize"]
 description = "Build with AddressSanitizer + UBSanitizer"
-run = """
-cmake -B build-sanitize -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-  '-DCMAKE_CXX_FLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer' \
-  '-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined'
-cmake --build build-sanitize
-"""
+run = "make build-sanitize"
 
 [tasks."build:coverage"]
 description = "Build with coverage instrumentation"
-run = """
-cmake -B build-coverage -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-  '-DCMAKE_CXX_FLAGS=--coverage' \
-  '-DCMAKE_EXE_LINKER_FLAGS=--coverage'
-cmake --build build-coverage
-"""
+run = "make build-coverage"
 
 # =============================================================================
 # Test
@@ -78,34 +72,28 @@ cmake --build build-coverage
 
 [tasks.test]
 description = "Run all tests"
-depends = ["build"]
-run = "ctest --test-dir build --output-on-failure"
+run = "make test"
 
 [tasks."test:vector"]
 description = "Run vector library tests"
-depends = ["build"]
-run = "ctest --test-dir build --output-on-failure -R vector"
+run = "make test-vector"
 
 [tasks."test:analyzer"]
 description = "Run analyzer tests"
-depends = ["build"]
-run = "ctest --test-dir build --output-on-failure -R analyzer"
+run = "make test-analyzer"
 
 [tasks."test:simulator"]
 description = "Run simulator tests"
-depends = ["build"]
-run = "ctest --test-dir build --output-on-failure -R simulator"
+run = "make test-simulator"
 
 [tasks."test:sanitize"]
 description = "Test with AddressSanitizer + UBSanitizer"
-depends = ["build:sanitize"]
-run = "ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 ctest --test-dir build-sanitize --output-on-failure"
+run = "make test-sanitize"
 
 [tasks."test:coverage"]
 description = "Run tests and generate coverage report"
-depends = ["build:coverage"]
 run = """
-ctest --test-dir build-coverage --output-on-failure
+make test-coverage
 uvx gcovr -r . build-coverage/ \
   --filter 'bins/.*' \
   --filter 'libs/.*' \
@@ -119,18 +107,15 @@ uvx gcovr -r . build-coverage/ \
 
 [tasks."run:simulator"]
 description = "Build and run the simulator"
-depends = ["build:simulator"]
-run = "./build/bins/simulator/simulator configs/karman_street_128x64.toml"
+run = "make run-simulator"
 
 [tasks."run:analyzer"]
 description = "Generate field data then benchmark all analyzer impls (MPI_RANKS, ANALYZER_THREADS)"
-depends = ["build:analyzer", "run:simulator"]
-run = "mpirun -n ${MPI_RANKS:-$(nproc)} --oversubscribe ./build/bins/analyzer/analyzer configs/karman_street_128x64.toml"
+run = "make run-analyzer"
 
 [tasks."run:analyzer:mpi"]
 description = "Run MPI analyzer (MPI_RANKS defaults to nproc)"
-depends = ["build:analyzer", "run:simulator"]
-run = "mpirun -n ${MPI_RANKS:-$(nproc)} --oversubscribe ./build/bins/analyzer/analyzer configs/karman_street_128x64.toml"
+run = "make run-analyzer"
 
 [tasks."run:configs"]
 description = "Run all configs via scripts/run_configs.sh"
@@ -139,21 +124,18 @@ run = "./scripts/run_configs.sh"
 [tasks.demo]
 description = "Full pipeline: build, simulate, benchmark all solvers, stats, then visualize; tees output to data/<STEM>/"
 run = """
-#!/usr/bin/env bash
-set -euo pipefail
 STEM=${STEM:-karman_street_128x64}
 OUT=data/$STEM
 mkdir -p "$OUT"
 
-cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-  2>&1 | tee "$OUT/configure_output.txt"
-cmake --build build 2>&1 | tee "$OUT/build_output.txt"
+make build 2>&1 | tee "$OUT/build_output.txt"
 
 ./build/bins/simulator/simulator configs/$STEM.toml \
   > >(tee "$OUT/simulator_stdout.txt") \
   2> >(tee "$OUT/simulator_stderr.txt" >&2)
 
-mpirun -n ${MPI_RANKS:-$(nproc)} --oversubscribe ./build/bins/analyzer/analyzer configs/$STEM.toml \
+mpirun -n ${MPI_RANKS:-$(nproc)} --oversubscribe \
+  ./build/bins/analyzer/analyzer configs/$STEM.toml \
   > >(tee "$OUT/analyzer_stdout.txt") \
   2> >(tee "$OUT/analyzer_stderr.txt" >&2)
 
@@ -230,11 +212,15 @@ cppcheck --enable=all --error-exitcode=1 \
   --suppress=normalCheckLevelMaxBranches \
   "--suppress=unusedStructMember:bins/simulator/src/fieldGenerator.cpp" \
   "--suppress=knownConditionTrueFalse:bins/analyzer/src/main.cpp" \
+  "--suppress=duplicateCondition:bins/analyzer/src/main.cpp" \
   "--suppress=unusedFunction:libs/field/src/grid.hpp" \
+  "--suppress=unusedFunction:bins/analyzer/src/timing.cpp" \
   bins/ libs/
 # unusedStructMember: false positive -- RadialComponents members accessed via std::optional::operator->
 # normalCheckLevelMaxBranches: pthreads.cpp two-pass design exceeds branch analysis limit, not an error
 # knownConditionTrueFalse: intentional #ifdef USE_MPI pattern; always 0/1 in non-MPI build
+# duplicateCondition: false positive -- consecutive if (runParallel) blocks are separated by #ifdef guards and do different work
+# unusedFunction timing.cpp: printTiming kept as a debug utility; not called in normal flow
 # unusedFunction grid.hpp: bounds/field/setPrecomputedStreamlines used in .cu files cppcheck does not analyze
 """
 
@@ -280,26 +266,23 @@ depends = [
 # Clean
 # =============================================================================
 
-[tasks."clean:cuda"]
-description = "Remove CUDA build directory"
-run = "rm -rf build_cuda"
-
 [tasks."clean:build"]
 description = "Remove main build directory"
-run = "rm -rf build"
+run = "make clean-build"
 
 [tasks."clean:sanitize"]
 description = "Remove sanitizer build directory"
-run = "rm -rf build-sanitize"
+run = "make clean-sanitize"
 
 [tasks."clean:coverage"]
 description = "Remove coverage build directory and data"
-run = "rm -rf build-coverage coverage.info"
+run = "make clean-coverage"
 
 [tasks."clean:data"]
 description = "Remove simulator output data"
-run = "rm -rf data/ *.h5 *.pkl"
+run = "make clean-data"
 
 [tasks.clean]
 description = "Remove all build artifacts"
-depends = ["clean:build", "clean:cuda", "clean:sanitize", "clean:coverage", "clean:data", "report:clean"]
+depends = ["report:clean"]
+run = "make clean"

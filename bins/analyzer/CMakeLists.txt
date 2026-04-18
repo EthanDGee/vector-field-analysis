@@ -29,7 +29,7 @@ add_library(analyzer_lib STATIC
 if(ENABLE_CUDA)
   target_sources(analyzer_lib PRIVATE
                  src/cudaStreamlineSolver.cu
-                 src/cudaFull.cu 
+                 src/cudaFull.cu
                  src/cudaFullStreamlineSolver.cu
                )
 endif()
@@ -38,28 +38,34 @@ target_include_directories(analyzer_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(analyzer_lib 
-  PUBLIC  
-    field 
+target_link_libraries(analyzer_lib
+  PUBLIC
+    field
     field_io
     HighFive
-                      
-  PRIVATE 
+
+  PRIVATE
     utils
     tomlplusplus::tomlplusplus
 )
 
 if(ENABLE_CUDA)
   target_link_libraries(analyzer_lib PUBLIC
-                        CUDA::cudart 
+                        CUDA::cudart
   )
   target_compile_definitions(analyzer_lib PUBLIC
                              ENABLE_CUDA_SOLVER=1
   )
-  set_target_properties(analyzer_lib PROPERTIES 
+  set_target_properties(analyzer_lib PROPERTIES
                         CUDA_SEPARABLE_COMPILATION ON
                         CUDA_STANDARD 17
                         CUDA_STANDARD_REQUIRED ON
+  )
+  # nvidia-cuda-toolkit 11.5.1 (Ubuntu 22.04) does not officially support
+  # GCC 11. This flag suppresses the host-compiler version check; the code
+  # itself is valid C++17.
+  target_compile_options(analyzer_lib PRIVATE
+      $<$<COMPILE_LANGUAGE:CUDA>:-allow-unsupported-compiler>
   )
 endif()
 
@@ -70,16 +76,31 @@ if(MPI_FOUND)
     target_link_libraries(analyzer_lib PUBLIC MPI::MPI_CXX)
 endif()
 
+# On glibc 2.34+ (Ubuntu 22.04+), libpthread.a is an empty stub that nvlink
+# cannot process during CUDA device linking. Point FindOpenMP at the real
+# versioned shared library before it runs its search.
+if(ENABLE_CUDA AND UNIX AND NOT APPLE AND NOT DEFINED OpenMP_pthread_LIBRARY)
+    find_file(OpenMP_pthread_LIBRARY
+        NAMES libpthread.so.0
+        PATHS
+            /usr/lib/x86_64-linux-gnu
+            /usr/lib/aarch64-linux-gnu
+            /usr/lib64
+            /usr/lib
+        NO_DEFAULT_PATH
+    )
+endif()
+
 find_package(OpenMP)
 if(OpenMP_FOUND)
     target_link_libraries(analyzer_lib PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
 add_executable(analyzer src/main.cpp)
-target_link_libraries(analyzer PRIVATE 
-                      analyzer_lib 
+target_link_libraries(analyzer PRIVATE
+                      analyzer_lib
                       utils
-                      stdc++fs 
+                      stdc++fs
                      )
 
 add_subdirectory(tests)
