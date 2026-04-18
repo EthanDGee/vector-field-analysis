@@ -108,6 +108,10 @@ uvx gcovr -r . build-coverage/ \
   --html-details coverage/index.html
 """
 
+[tasks."coverage:open"]
+description = "Open the HTML coverage report in the default browser"
+run = "xdg-open coverage/index.html"
+
 # =============================================================================
 # Run
 # =============================================================================
@@ -241,6 +245,10 @@ lychee --verbose --no-progress --exclude math.nist.gov README.md docs/ tools/ .g
 [tasks."report:build"]
 description = "Build the LaTeX report PDF"
 run = "make -C report"
+
+[tasks."report:open"]
+description = "Open the report PDF in the default viewer"
+run = "xdg-open report/report.pdf"
 
 [tasks."report:clean"]
 description = "Clean LaTeX report build artifacts"

@@ -106,7 +106,7 @@ clean-sanitize:
 	rm -rf $(BUILD_SANITIZE)
 
 clean-coverage:
-	rm -rf $(BUILD_COVERAGE) coverage.info
+	rm -rf $(BUILD_COVERAGE) coverage.info coverage/
 
 clean-data:
 	rm -rf data/ *.h5 *.pkl
