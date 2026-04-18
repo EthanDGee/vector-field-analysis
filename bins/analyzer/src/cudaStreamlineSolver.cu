@@ -1,8 +1,7 @@
 #include "cudaStreamlineSolver.hpp"
 
-#include <cuda_runtime.h>
-
 #include <cmath>
+#include <cuda_runtime.h>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -37,15 +36,9 @@ __device__ int clampInt(int value, int lo, int hi) {
 // For each grid cell, compute the downstream neighbor that its vector points toward.
 // This kernel only performs pass 1 of the solver:
 //   source cell -> downstream destination cell
-// It does NOT mutate streamline objects
-// Pass 2 remains on the CPU and reuses applyNeighborPairs(...)
-__global__ void computeNeighborsKernel(const DeviceVec2* field,
-                                       int rows,
-                                       int cols,
-                                       float xMin,
-                                       float xMax,
-                                       float yMin,
-                                       float yMax,
+// Pass 2 runs on the CPU via StreamlineSolver::applyNeighborPairs.
+__global__ void computeNeighborsKernel(const DeviceVec2* field, int rows, int cols, float xMin,
+                                       float xMax, float yMin, float yMax,
                                        DeviceGridCell* neighbors) {
     const int idx = blockIdx.x * blockDim.x + threadIdx.x;
     const int total = rows * cols;
@@ -74,15 +67,11 @@ __global__ void computeNeighborsKernel(const DeviceVec2* field,
     const float physCol =
         xMin + ((xMax - xMin) * static_cast<float>(col) / static_cast<float>(cols - 1));
 
-    const int destRow = clampInt(
-        static_cast<int>(roundf((physRow + v.y - yMin) / rowSpacing)),
-        0,
-        rows - 1);
+    const int destRow =
+        clampInt(static_cast<int>(roundf((physRow + v.y - yMin) / rowSpacing)), 0, rows - 1);
 
-    const int destCol = clampInt(
-        static_cast<int>(roundf((physCol + v.x - xMin) / colSpacing)),
-        0,
-        cols - 1);
+    const int destCol =
+        clampInt(static_cast<int>(roundf((physCol + v.x - xMin) / colSpacing)), 0, cols - 1);
 
     neighbors[idx] = DeviceGridCell{destRow, destCol};
 }
@@ -138,32 +127,24 @@ void CudaStreamlineSolver::computeTimeStep(Field::Grid& grid) {
                              sizeof(DeviceGridCell) * static_cast<std::size_t>(total)),
                   "cudaMalloc(dNeighbors)");
 
-        cudaCheck(cudaMemcpy(dField,
-                             hostField.data(),
+        cudaCheck(cudaMemcpy(dField, hostField.data(),
                              sizeof(DeviceVec2) * static_cast<std::size_t>(total),
                              cudaMemcpyHostToDevice),
                   "cudaMemcpy H2D field");
 
-        constexpr int blockSize = 256;
+        const int blockSize = static_cast<int>(blockSize_);
         const int launchSize = (total + blockSize - 1) / blockSize;
 
-        computeNeighborsKernel<<<launchSize, blockSize>>>(
-            dField,
-            rowCount,
-            colCount,
-            bounds.xMin,
-            bounds.xMax,
-            bounds.yMin,
-            bounds.yMax,
-            dNeighbors);
+        computeNeighborsKernel<<<launchSize, blockSize>>>(dField, rowCount, colCount, bounds.xMin,
+                                                          bounds.xMax, bounds.yMin, bounds.yMax,
+                                                          dNeighbors);
 
         cudaCheck(cudaGetLastError(), "computeNeighborsKernel launch");
         cudaCheck(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
 
         // Copy GPU-computed neighbor pairs back to host
         std::vector<DeviceGridCell> hostNeighbors(static_cast<std::size_t>(total));
-        cudaCheck(cudaMemcpy(hostNeighbors.data(),
-                             dNeighbors,
+        cudaCheck(cudaMemcpy(hostNeighbors.data(), dNeighbors,
                              sizeof(DeviceGridCell) * static_cast<std::size_t>(total),
                              cudaMemcpyDeviceToHost),
                   "cudaMemcpy D2H neighbors");
@@ -178,10 +159,7 @@ void CudaStreamlineSolver::computeTimeStep(Field::Grid& grid) {
                 const std::size_t idx =
                     (static_cast<std::size_t>(row) * static_cast<std::size_t>(colCount)) +
                     static_cast<std::size_t>(col);
-                neighbors[idx] = Field::GridCell{
-                    hostNeighbors[idx].row,
-                    hostNeighbors[idx].col
-                };
+                neighbors[idx] = Field::GridCell{hostNeighbors[idx].row, hostNeighbors[idx].col};
             }
         }
 
