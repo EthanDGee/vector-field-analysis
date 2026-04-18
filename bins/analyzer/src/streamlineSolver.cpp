@@ -68,9 +68,10 @@ StreamlineSolver::reconstructPathsDSU(const Field::Grid& grid,
         emitted[static_cast<std::size_t>(streamId)] = true;
 
         Field::Path path;
-        for (const int point : paths[static_cast<std::size_t>(streamId)]) {
-            path.push_back({point / colCount, point % colCount});
-        }
+        std::transform(
+            paths[static_cast<std::size_t>(streamId)].begin(),
+            paths[static_cast<std::size_t>(streamId)].end(), std::back_inserter(path),
+            [&](int point) -> Field::GridCell { return {point / colCount, point % colCount}; });
         output.push_back(std::move(path));
     }
 

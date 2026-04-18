@@ -109,6 +109,7 @@ ctest --test-dir build-coverage --output-on-failure
 uvx gcovr -r . build-coverage/ \
   --filter 'bins/.*' \
   --filter 'libs/.*' \
+  --gcov-ignore-parse-errors=negative_hits.warn_once_per_file \
   --print-summary
 """
 
@@ -230,6 +231,7 @@ cppcheck --enable=all --error-exitcode=1 \
   "--suppress=unusedStructMember:bins/simulator/src/fieldGenerator.cpp" \
   "--suppress=knownConditionTrueFalse:bins/analyzer/src/main.cpp" \
   "--suppress=unusedFunction:libs/field/src/grid.hpp" \
+  "--suppress=unusedFunction:bins/analyzer/src/timing.cpp" \
   "--suppress=duplicateCondition:bins/analyzer/src/main.cpp" \
   bins/ libs/
 # unusedStructMember: false positive -- RadialComponents members accessed via std::optional::operator->

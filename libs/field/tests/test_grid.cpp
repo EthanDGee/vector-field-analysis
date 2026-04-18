@@ -137,7 +137,7 @@ TEST_CASE("joinStreamlines merges end path into start", "[grid]") {
     end->appendPoint({2, 0});
 
     auto grid = makeField();
-    grid.joinStreamlines(start, end);
+    Field::Grid::joinStreamlines(start, end);
 
     REQUIRE(start->getPath().size() == 3);
     REQUIRE(*std::next(start->getPath().begin(), 1) == (Field::GridCell{1, 0}));
@@ -147,14 +147,14 @@ TEST_CASE("joinStreamlines merges end path into start", "[grid]") {
 TEST_CASE("joinStreamlines with null start is a no-op", "[grid]") {
     auto end = std::make_shared<Field::Streamline>(Field::GridCell{0, 0});
     auto grid = makeField();
-    REQUIRE_NOTHROW(grid.joinStreamlines(nullptr, end));
+    REQUIRE_NOTHROW(Field::Grid::joinStreamlines(nullptr, end));
 }
 
 TEST_CASE("joinStreamlines on equal pointers is a no-op", "[grid]") {
     auto sl = std::make_shared<Field::Streamline>(Field::GridCell{0, 0});
     auto grid = makeField();
     const std::size_t sizeBefore = sl->getPath().size();
-    grid.joinStreamlines(sl, sl);
+    Field::Grid::joinStreamlines(sl, sl);
     REQUIRE(sl->getPath().size() == sizeBefore);
 }
 
