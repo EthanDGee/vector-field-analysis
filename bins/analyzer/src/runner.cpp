@@ -98,9 +98,8 @@ static void writeAndReport(const std::string& outPath,
 
 static void verifyAll(const RunResult& sequential, const RunResult& pthreads,
                       [[maybe_unused]] const RunResult& openmp,
-                      [[maybe_unused]] const RunResult& mpi,
-                      [[maybe_unused]] const RunResult& cuda, bool runParallel,
-                      [[maybe_unused]] bool runMpi) {
+                      [[maybe_unused]] const RunResult& mpi, [[maybe_unused]] const RunResult& cuda,
+                      bool runParallel, [[maybe_unused]] bool runMpi) {
     if (runParallel) {
         verify(sequential.streams, pthreads.streams, "pthreads");
 #ifdef _OPENMP
