@@ -15,23 +15,23 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 JOB_NAME="${JOB_NAME:-vfa}"
 
 if [[ $# -eq 1 ]]; then
-  pattern="${JOB_NAME}_$1"
+	pattern="${JOB_NAME}_$1"
 else
-  pattern="${JOB_NAME}_"
+	pattern="${JOB_NAME}_"
 fi
 
 mapfile -t job_ids < <(
-  squeue -u "$USER" --format="%i %j" --noheader \
-    | awk -v pat="$pattern" 'substr($2, 1, length(pat)) == pat {print $1}'
+	squeue -u "$USER" --format="%i %j" --noheader |
+		awk -v pat="$pattern" 'substr($2, 1, length(pat)) == pat {print $1}'
 )
 
 if [[ ${#job_ids[@]} -eq 0 ]]; then
-  echo "No matching jobs found."
-  exit 0
+	echo "No matching jobs found."
+	exit 0
 fi
 
 for id in "${job_ids[@]}"; do
-  name=$(squeue -j "$id" --format="%j" --noheader 2>/dev/null || echo "unknown")
-  scancel "$id"
-  echo "cancelled job $id ($name)"
+	name=$(squeue -j "$id" --format="%j" --noheader 2>/dev/null || echo "unknown")
+	scancel "$id"
+	echo "cancelled job $id ($name)"
 done
