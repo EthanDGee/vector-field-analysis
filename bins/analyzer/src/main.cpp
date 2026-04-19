@@ -21,19 +21,12 @@ static void printHelp() {
         << "Reads data/<config-stem>/field.h5 and writes data/<config-stem>/streams.h5.\n"
         << "See configs/ for example configs.\n"
         << "\n[analyzer] keys (all optional):\n"
-        << "  solver                   = \"benchmark\"\n"
-        << "                             sequential | openmp | pthreads | mpi | cuda | benchmark\n"
-        << "                             (cuda requires -DENABLE_CUDA=ON at build time)\n"
-        << "  threads                  = 0      thread/rank count for single-solver modes\n"
-        << "                                    (0 = hardware_concurrency)\n"
-        << "  cuda_block_size          = 256    CUDA threads per block (single-solver mode)\n"
-        << "  benchmark_threads        = [2,4,8]  thread counts for pthreads/openmp in benchmark\n"
-        << "  benchmark_cuda_block_sizes = [64,128,256,512]  block sizes for cuda in benchmark\n"
-        << "\nbenchmark mode runs all available implementations and verifies output vs "
-           "sequential.\n"
-        << "To include MPI in the benchmark: mpirun -n N analyzer <config.toml>\n"
-        << "For a single solver:             mpirun -n N analyzer <config.toml>  with solver = "
-           "\"mpi\"\n";
+        << "  solver          = \"sequential\"  one of: sequential | openmp | pthreads | mpi | cuda\n"
+        << "                                  (cuda requires -DENABLE_CUDA=ON at build time)\n"
+        << "  threads         = 0             thread count for openmp/pthreads  (0 = hardware_concurrency)\n"
+        << "  cuda_block_size = 256           CUDA threads per block\n"
+        << "  output          = \"\"            path for streams HDF5; default derived from config stem\n"
+        << "\nFor MPI: mpirun -n N analyzer <config.toml>  with solver = \"mpi\"\n";
 }
 
 static unsigned int resolveThreadCount(unsigned int requested) {
@@ -119,14 +112,8 @@ int main(int argc, char* argv[]) {
                       << "Steps:   " << numSteps << "\n\n";
         }
 
-        if (config.solver == "benchmark") {
-            runBenchmark(field, config.benchmarkThreads, config.benchmarkCudaBlockSizes, mpiRank,
-                         mpiSize, outPath);
-        } else {
-            const unsigned int threadCount = resolveThreadCount(config.threadCount);
-            runOne(config.solver, field, threadCount, config.cudaBlockSize, mpiRank, mpiSize,
-                   outPath);
-        }
+        const unsigned int threadCount = resolveThreadCount(config.threadCount);
+        runOne(config.solver, field, threadCount, config.cudaBlockSize, mpiRank, mpiSize, outPath);
     } catch (const std::exception& e) {
         if (mpiRank == 0) {
             std::cerr << "Error: " << e.what() << "\n";
