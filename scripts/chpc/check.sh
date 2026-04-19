@@ -19,6 +19,13 @@ mapfile -t CUDA_SOURCES < <(find "$PROJECT_DIR/bins" -path "*/src/*.cu" | sort)
 
 cd "$PROJECT_DIR"
 
+echo "==> configure"
+cmake -B "$PROJECT_DIR/build" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+  -S "$PROJECT_DIR" \
+  > /dev/null
+
 echo "==> fmt"
 fmt_failed=0
 for f in "${CPP_SOURCES[@]}" "${CUDA_SOURCES[@]}"; do
