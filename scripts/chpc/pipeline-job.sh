@@ -2,7 +2,7 @@
 # SLURM batch worker -- submitted by pipeline.sh, do not run directly.
 # Runs simulator -> analyzer for one config stem.
 # Expects these env vars (set via sbatch --export):
-#   STEM           - config stem (e.g. karman_street_128x64)
+#   STEM           - config stem (e.g. vortex_256x256)
 #   PROJECT_DIR    - absolute path to the project root
 #   CUDA_MODULE    - CUDA module to load (e.g. cuda/11.6.2)
 #   OPENMPI_MODULE - OpenMPI module to load (e.g. openmpi/5.0.8)

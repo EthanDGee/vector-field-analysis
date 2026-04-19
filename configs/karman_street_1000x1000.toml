@@ -1,5 +1,5 @@
-# karman_street_128x64.toml
-# Von Karman vortex street -- the alternating vortex pattern that forms
+# karman_street_1000x1000.toml
+# Von Kármán vortex street -- the alternating vortex pattern that forms
 # downstream of any bluff body (cylinder, bridge pier, smokestack, island).
 #
 # Uses the exact analytical formula for two infinite periodic rows of point
@@ -10,10 +10,10 @@
 #   v = +(G/2L) * sin(2pi*x/L)      / (cosh(2pi*(y-a)/L) - cos(2pi*x/L))
 #
 # Upper row (CCW, y=+0.28) and lower row (CW, y=-0.28) are offset by L/2=0.5
-# -- the classical stable Karman geometry. The implied cylinder is off the
+# -- the classical stable Kármán geometry. The implied cylinder is off the
 # left edge of the domain.
 #
-# Run: simulator configs/karman_street_128x64.toml
+# Run: simulator configs/karman_street_1000x1000.toml
 
 [simulation]
 steps = 120

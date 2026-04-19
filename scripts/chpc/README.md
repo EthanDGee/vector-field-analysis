@@ -32,7 +32,7 @@ See [`docs/chpc-reference.md`](../../docs/chpc-reference.md) for cluster setup, 
 ./scripts/chpc/pipeline.sh
 
 # 3c. Or submit only specific stems
-./scripts/chpc/pipeline.sh karman_street_128x64 source_grid_divergent_512x512
+./scripts/chpc/pipeline.sh vortex_256x256 source_grid_divergent_512x512
 
 # 4. Pull results back to local
 ./scripts/local/pull.sh

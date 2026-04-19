@@ -116,7 +116,7 @@ Scripts load all required modules automatically — no manual `module load` need
 ./scripts/chpc/pipeline.sh
 
 # Or submit specific stems
-./scripts/chpc/pipeline.sh karman_street_128x64 source_grid_divergent_512x512
+./scripts/chpc/pipeline.sh vortex_256x256 source_grid_divergent_512x512
 ```
 
 This will:
@@ -135,7 +135,7 @@ This will:
 ./scripts/chpc/monitor.sh
 
 # Live tail a specific stem
-./scripts/chpc/monitor.sh karman_street_128x64
+./scripts/chpc/monitor.sh vortex_256x256
 
 # Raw SLURM queue
 squeue -u $USER
@@ -150,7 +150,7 @@ squeue -u $USER
 ./scripts/chpc/stop.sh
 
 # Cancel one stem
-./scripts/chpc/stop.sh karman_street_128x64
+./scripts/chpc/stop.sh vortex_256x256
 ```
 
 ---
@@ -202,8 +202,8 @@ module load $OPENMPI_MODULE $HDF5_MODULE $CUDA_MODULE
 Then run binaries directly:
 
 ```sh
-./build/bins/simulator/simulator configs/karman_street_128x64.toml
-mpirun -n 4 ./build/bins/analyzer/analyzer configs/karman_street_128x64.toml
+./build/bins/simulator/simulator configs/vortex_256x256.toml
+mpirun -n 4 ./build/bins/analyzer/analyzer configs/vortex_256x256.toml
 ```
 
 ---

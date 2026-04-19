@@ -2,7 +2,7 @@ SHELL        := bash
 .SHELLFLAGS  := -euo pipefail -c
 .ONESHELL:
 
-STEM      ?= karman_street_128x64
+STEM      ?= vortex_256x256
 MPI_RANKS ?= $(shell nproc)
 
 BUILD          := build

@@ -1,8 +1,8 @@
-# vortex_128x128.toml
-# A single counter-clockwise vortex centered at the origin.
+# vortex_256x256.toml
+# A single counter-clockwise vortex centered at the origin, 256×256 grid.
 # Viscous decay causes the field to fade over time, as real vortices do.
 #
-# Run: simulator configs/vortex_128x128.toml
+# Run: simulator configs/vortex_256x256.toml
 
 [simulation]
 steps = 50
