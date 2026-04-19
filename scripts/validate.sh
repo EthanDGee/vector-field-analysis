@@ -137,11 +137,19 @@ _check_openmpi_module() {
     echo "error: OPENMPI_MODULE is not set (e.g. openmpi/5.0.8 -- run 'module spider openmpi' to see options)" >&2
     return 1
   fi
+  if [[ ! "$OPENMPI_MODULE" =~ ^openmpi/ ]]; then
+    echo "error: OPENMPI_MODULE=\"$OPENMPI_MODULE\" must be in openmpi/X.Y.Z format (e.g. openmpi/5.0.8)" >&2
+    return 1
+  fi
 }
 
 _check_hdf5_module() {
   if [[ -z "${HDF5_MODULE:-}" ]]; then
     echo "error: HDF5_MODULE is not set (e.g. hdf5/1.14.6 -- run 'module spider hdf5' to see options)" >&2
+    return 1
+  fi
+  if [[ ! "$HDF5_MODULE" =~ ^hdf5/ ]]; then
+    echo "error: HDF5_MODULE=\"$HDF5_MODULE\" must be in hdf5/X.Y.Z format (e.g. hdf5/1.14.6)" >&2
     return 1
   fi
 }

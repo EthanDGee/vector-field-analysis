@@ -22,7 +22,7 @@ fi
 
 mapfile -t job_ids < <(
   squeue -u "$USER" --format="%i %j" --noheader \
-    | awk -v pat="$pattern" '$2 ~ pat {print $1}'
+    | awk -v pat="$pattern" 'substr($2, 1, length(pat)) == pat {print $1}'
 )
 
 if [[ ${#job_ids[@]} -eq 0 ]]; then

@@ -29,4 +29,4 @@ echo "=== simulator ==="
 
 echo ""
 echo "=== analyzer ==="
-mpirun -n "$SLURM_NTASKS" "$PROJECT_DIR/analyzer_run" "configs/$STEM.toml"
+srun --mpi=pmix -n "$SLURM_NTASKS" "$PROJECT_DIR/analyzer_run" "configs/$STEM.toml"

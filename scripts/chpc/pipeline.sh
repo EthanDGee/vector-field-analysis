@@ -26,9 +26,15 @@ JOB_NAME="${JOB_NAME:-vfa}"
 
 if [[ $# -eq 0 ]]; then
   STEMS=()
+  shopt -s nullglob
   for f in "$CONFIGS_DIR"/*.toml; do
     STEMS+=("$(basename "$f" .toml)")
   done
+  shopt -u nullglob
+  if [[ ${#STEMS[@]} -eq 0 ]]; then
+    echo "error: no *.toml configs found in $CONFIGS_DIR" >&2
+    exit 1
+  fi
 else
   STEMS=("$@")
   for stem in "${STEMS[@]}"; do

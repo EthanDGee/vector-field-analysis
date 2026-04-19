@@ -221,6 +221,18 @@ run = "uvx ruff check tools/"
 description = "Check Python formatting with ruff"
 run = "uvx ruff format --check tools/"
 
+[tasks."sh:lint"]
+description = "Lint shell scripts with shellcheck"
+run = "find scripts report -name '*.sh' | xargs shellcheck"
+
+[tasks."sh:format"]
+description = "Format shell scripts with shfmt in place"
+run = "find scripts report -name '*.sh' | xargs shfmt -w"
+
+[tasks."sh:format:check"]
+description = "Check shell script formatting with shfmt"
+run = "find scripts report -name '*.sh' | xargs shfmt -d"
+
 [tasks.cppcheck]
 description = "Run cppcheck static analysis"
 run = """
@@ -281,6 +293,8 @@ depends = [
   "cppcheck",
   "py:lint",
   "py:format:check",
+  "sh:lint",
+  "sh:format:check",
 ]
 
 # =============================================================================
