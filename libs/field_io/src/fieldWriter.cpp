@@ -47,4 +47,43 @@ void write(const std::string& path, const Field::TimeSeries& field, const std::s
     writeGeometryAttributes(group, field.bounds, gridSize);
 }
 
+StreamingWriter::StreamingWriter(const std::string& path, const Field::Bounds& bounds,
+                                 const Field::GridSize& gridSize, std::size_t numFrames,
+                                 const std::string& typeLabel, float dt, float viscosity)
+    : file_(path, HighFive::File::Overwrite),
+      vxDs_(std::nullopt),
+      vyDs_(std::nullopt),
+      numRows_(static_cast<std::size_t>(gridSize.height)),
+      numCols_(static_cast<std::size_t>(gridSize.width)) {
+    auto group = file_.createGroup("field");
+
+    HighFive::DataSpace space({numFrames, numRows_, numCols_});
+    vxDs_.emplace(group.createDataSet<float>("vx", space));
+    vyDs_.emplace(group.createDataSet<float>("vy", space));
+
+    group.createAttribute("type", typeLabel);
+    group.createAttribute("steps", static_cast<int>(numFrames));
+    group.createAttribute("dt", dt);
+    group.createAttribute("viscosity", viscosity);
+    writeGeometryAttributes(group, bounds, gridSize);
+}
+
+void StreamingWriter::writeFrame(std::size_t frameIndex, const Field::Slice& frame) {
+    // Wrap in an outer dimension so the data rank matches the 3-D file dataset.
+    std::vector<std::vector<std::vector<float>>> vxBuf(
+        1, std::vector<std::vector<float>>(numRows_, std::vector<float>(numCols_)));
+    std::vector<std::vector<std::vector<float>>> vyBuf(
+        1, std::vector<std::vector<float>>(numRows_, std::vector<float>(numCols_)));
+
+    for (std::size_t row = 0; row < numRows_; ++row) {
+        for (std::size_t col = 0; col < numCols_; ++col) {
+            vxBuf[0][row][col] = frame[row][col].x;
+            vyBuf[0][row][col] = frame[row][col].y;
+        }
+    }
+
+    vxDs_->select({frameIndex, 0, 0}, {1, numRows_, numCols_}).write(vxBuf);
+    vyDs_->select({frameIndex, 0, 0}, {1, numRows_, numCols_}).write(vyBuf);
+}
+
 } // namespace FieldWriter

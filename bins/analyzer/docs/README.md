@@ -19,9 +19,9 @@ mise run run:analyzer         # uses MPI_RANKS for a fair apples-to-apples compa
 MPI_RANKS=8 mise run run:analyzer:mpi
 
 # Or drive manually:
-simulator configs/vortex_128x128.toml                        # generate field.h5
-analyzer configs/vortex_128x128.toml                         # benchmark all impls (single-process)
-mpirun -n 4 analyzer configs/vortex_128x128.toml             # benchmark with MPI active
+simulator configs/vortex_256x256.toml                        # generate field.h5
+analyzer configs/vortex_256x256.toml                         # benchmark all impls (single-process)
+mpirun -n 4 analyzer configs/vortex_256x256.toml             # benchmark with MPI active
 ```
 
 ## Input Format

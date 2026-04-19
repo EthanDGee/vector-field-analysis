@@ -1,14 +1,12 @@
-#include "cudaFull.hpp"
+#include "cuda.hpp"
 
-#include <algorithm>
 #include <cmath>
 #include <cuda_runtime.h>
 #include <stdexcept>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
-namespace cudaFull {
+namespace cuda {
 namespace {
 
 // flat 2D index helper
@@ -126,32 +124,18 @@ __global__ void compressParentsKernel(int n, int* parent) {
 
 } // namespace
 
-Result computeComponents(const Field::Slice& field, const Field::Bounds& bounds,
-                         unsigned int cudaBlockSize) {
-    const int rows = static_cast<int>(field.size());
-    if (rows == 0) {
+Result computeComponents(const std::vector<Vector::Vec2>& field, int rows, int cols,
+                         const Field::Bounds& bounds, unsigned int cudaBlockSize) {
+    if (rows == 0 || cols == 0) {
         return {};
-    }
-
-    const int cols = static_cast<int>(field[0].size());
-    if (cols == 0) {
-        return {};
-    }
-
-    for (int row = 0; row < rows; ++row) {
-        if (static_cast<int>(field[static_cast<std::size_t>(row)].size()) != cols) {
-            throw std::runtime_error("cudaFull::computeComponents requires a rectangular field");
-        }
     }
 
     const int total = rows * cols;
 
     std::vector<float2> hostField(static_cast<std::size_t>(total));
-    for (int row = 0; row < rows; ++row) {
-        for (int col = 0; col < cols; ++col) {
-            const auto& v = field[static_cast<std::size_t>(row)][static_cast<std::size_t>(col)];
-            hostField[static_cast<std::size_t>(toIndex(row, col, cols))] = float2{v.x, v.y};
-        }
+    for (int i = 0; i < total; ++i) {
+        const auto& v = field[static_cast<std::size_t>(i)];
+        hostField[static_cast<std::size_t>(i)] = float2{v.x, v.y};
     }
 
     float2* dField = nullptr;
@@ -232,20 +216,17 @@ Result computeComponents(const Field::Slice& field, const Field::Bounds& bounds,
         cleanup();
 
         // Convert raw roots to dense labels 0..N-1
-        std::unordered_map<int, int> rootToDense;
+        std::vector<int> rootToLabel(static_cast<std::size_t>(total), -1);
         std::vector<int> componentId(static_cast<std::size_t>(total));
 
         int nextLabel = 0;
         for (int idx = 0; idx < total; ++idx) {
             const int root = parent[static_cast<std::size_t>(idx)];
-            const auto it = rootToDense.find(root);
-            if (it == rootToDense.end()) {
-                rootToDense.emplace(root, nextLabel);
-                componentId[static_cast<std::size_t>(idx)] = nextLabel;
-                ++nextLabel;
-            } else {
-                componentId[static_cast<std::size_t>(idx)] = it->second;
+            if (rootToLabel[static_cast<std::size_t>(root)] == -1) {
+                rootToLabel[static_cast<std::size_t>(root)] = nextLabel++;
             }
+            componentId[static_cast<std::size_t>(idx)] =
+                rootToLabel[static_cast<std::size_t>(root)];
         }
 
         Result result;
@@ -267,7 +248,7 @@ std::vector<Field::Path> reconstructPaths(const Result& result) {
 
     const int total = result.rows * result.cols;
     if (static_cast<int>(result.successor.size()) != total) {
-        throw std::runtime_error("cudaFull::reconstructPaths received inconsistent result sizes");
+        throw std::runtime_error("cuda::reconstructPaths received inconsistent result sizes");
     }
 
     // owner[idx] = streamline id currently owning this cell, or -1 if unclaimed
@@ -328,7 +309,6 @@ std::vector<Field::Path> reconstructPaths(const Result& result) {
         emitted[static_cast<std::size_t>(streamId)] = true;
 
         Field::Path path;
-        path.reserve(paths[static_cast<std::size_t>(streamId)].size());
         for (const int point : paths[static_cast<std::size_t>(streamId)]) {
             path.push_back(toGridCell(point, result.cols));
         }
@@ -337,4 +317,4 @@ std::vector<Field::Path> reconstructPaths(const Result& result) {
 
     return output;
 }
-} // namespace cudaFull
+} // namespace cuda

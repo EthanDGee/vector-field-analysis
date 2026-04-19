@@ -2,6 +2,7 @@
 
 This section presents the findings of our comparative performance analysis across the various parallel implementations.
 
+
 \subsection{Experimental Setup}
 
 All performance evaluations were conducted on the Kingspeak cluster at the Center for High Performance Computing (CHPC) using four compute nodes.
@@ -29,12 +30,15 @@ This study compares the performance of POSIX threads (Pthreads) against OpenMP a
 		2                   &                                     &                              \\ \hline
 		4                   &                                     &                              \\ \hline
 		8                   &                                     &                              \\ \hline
+		16                  &                                     &                              \\ \hline
 	\end{tabular}
 \end{table}
+
 
 The results indicate that both Pthreads and OpenMP implementations scale effectively with increasing core counts, showing consistent performance improvements at each stage.
 However, OpenMP consistently achieved slightly lower runtimes than Pthreads across all configurations.
 This advantage was particularly evident at the 4-thread count, where OpenMP's internal load balancing mechanisms better managed the non-uniform computational load inherent in streamline tracing compared to the manual Pthreads implementation.
+
 
 \subsection{GPU Block Size Analysis}
 
@@ -56,6 +60,7 @@ The GPU performance analysis demonstrates that increasing the block size from 12
 2 ms.
 This improvement suggests that a block size of 256 better utilizes the GPU's streaming multiprocessors and improves latency hiding.
 Moving to a block size of 512 threads yielded a much smaller improvement, reaching 468.6 ms, indicating that the system is approaching a point of diminishing returns where occupancy is already high enough to saturate the available hardware resources.
+
 
 \subsection{Distributed CPU vs. Distributed GPU Scaling Study}
 
@@ -93,7 +98,4 @@ Table \ref{tab:perf_summary} provides a high-level comparison of the runtime and
 		Hybrid (MPI+CUDA)   &                       &                  \\ \hline
 	\end{tabular}
 \end{table}
-
-
-Analysis
 

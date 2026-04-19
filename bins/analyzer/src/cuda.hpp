@@ -4,7 +4,7 @@
 
 #include <vector>
 
-namespace cudaFull {
+namespace cuda {
 
 // GPU-native result for one analyzed field slice
 //   flattened destination index for cell idx
@@ -22,10 +22,10 @@ struct Result {
 // does NOT build Field::Grid streamlines directly
 // Instead, it returns a GPU-native graph representation that can later be
 // reconstructed into Field::Path objects
-Result computeComponents(const Field::Slice& field, const Field::Bounds& bounds,
-                         unsigned int blockSize = 256);
+Result computeComponents(const std::vector<Vector::Vec2>& field, int rows, int cols,
+                         const Field::Bounds& bounds, unsigned int blockSize = 256);
 
 // Reconstructs deterministic host-side paths from the GPU-native result
 std::vector<Field::Path> reconstructPaths(const Result& result);
 
-} // namespace cudaFull
+} // namespace cuda

@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -152,12 +153,12 @@ struct CustomExpressionEvaluator {
 
 } // namespace
 
-Field::TimeSeries generateTimeSeries(const SimulatorConfig& config) {
+void generateTimeSeries(const SimulatorConfig& config,
+                        std::function<void(std::size_t, const Field::Slice&)> onFrame) {
     const auto numSteps = static_cast<std::size_t>(config.steps);
     const auto height = static_cast<std::size_t>(config.grid.height);
     const auto width = static_cast<std::size_t>(config.grid.width);
 
-    // Pre-compute physical coordinates for each grid index
     std::vector<float> xCoords(width);
     std::vector<float> yCoords(height);
     for (std::size_t col = 0; col < width; ++col) {
@@ -169,7 +170,6 @@ Field::TimeSeries generateTimeSeries(const SimulatorConfig& config) {
                                            config.bounds.yMin, config.bounds.yMax);
     }
 
-    // Pre-compile custom field expressions - one evaluator per layer, nullptr for non-custom
     std::vector<std::unique_ptr<CustomExpressionEvaluator>> evaluators(config.layers.size());
     for (std::size_t layerIndex = 0; layerIndex < config.layers.size(); ++layerIndex) {
         if (config.layers[layerIndex].type == FieldType::Custom) {
@@ -178,17 +178,10 @@ Field::TimeSeries generateTimeSeries(const SimulatorConfig& config) {
         }
     }
 
-    // Allocate result: steps[steps][height][width]
-    Field::TimeSeries result;
-    result.bounds = config.bounds;
-    result.frames.assign(numSteps, Field::Slice(height, std::vector<Vector::Vec2>(width)));
+    Field::Slice slice(height, std::vector<Vector::Vec2>(width));
 
-    // For each time step, sample every layer at every grid cell and sum their
-    // contributions (linear superposition). Strength is the per-layer weight.
     for (std::size_t step = 0; step < numSteps; ++step) {
         const float time = static_cast<float>(step) * config.dt;
-        // Viscosity damps the field exponentially over time, modelling energy
-        // dissipation. Computed once per step because it is spatially uniform.
         const float decay = std::exp(-config.viscosity * time);
 
         for (std::size_t row = 0; row < height; ++row) {
@@ -231,10 +224,25 @@ Field::TimeSeries generateTimeSeries(const SimulatorConfig& config) {
                     sum += layer.strength * (layer.amplitude * contribution);
                 }
 
-                result.frames[step][row][col] = decay * sum;
+                slice[row][col] = decay * sum;
             }
         }
+
+        onFrame(step, slice);
     }
+}
+
+Field::TimeSeries generateTimeSeries(const SimulatorConfig& config) {
+    const auto numSteps = static_cast<std::size_t>(config.steps);
+    const auto height = static_cast<std::size_t>(config.grid.height);
+    const auto width = static_cast<std::size_t>(config.grid.width);
+
+    Field::TimeSeries result;
+    result.bounds = config.bounds;
+    result.frames.resize(numSteps, Field::Slice(height, std::vector<Vector::Vec2>(width)));
+
+    generateTimeSeries(
+        config, [&](std::size_t step, const Field::Slice& slice) { result.frames[step] = slice; });
 
     return result;
 }
