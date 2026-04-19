@@ -89,15 +89,49 @@ for stem in "${STEMS[@]}"; do
 		continue
 	fi
 
-	# Analyzer
-	if mpirun -n "${MPI_RANKS:-$(nproc)}" --oversubscribe "$ANALYZER" "$config" \
-		> >(tee "$out/analyzer_stdout.txt") \
-		2> >(tee "$out/analyzer_stderr.txt" >&2); then
-		ANA_STATUS[$stem]="OK"
-		printf "    analyzer   OK\n"
-	else
-		ANA_STATUS[$stem]="FAIL"
-		printf "    analyzer   FAIL (exit %d)\n" "$?"
+	# Analyzer (scaling study)
+	printf "    analyzer   scaling...\n"
+	ANA_STATUS[$stem]="OK"
+
+	run_variant() {
+		local solver=$1 workers=$2
+		local variant_name="${solver}_${workers}"
+		local log_file="$out/analyzer_${variant_name}.txt"
+		local streams_out="$out/streams_${variant_name}.h5"
+
+		local tmp_toml="$out/${stem}.toml"
+		sed '/^\[analyzer\]/,$d' "$config" >"$tmp_toml"
+		printf "\n[analyzer]\nsolver = \"%s\"\nthreads = %d\noutput = \"%s\"\n" \
+			"$solver" "$workers" "$streams_out" >>"$tmp_toml"
+
+		local cmd=()
+		if [[ "$solver" == "mpi" ]]; then
+			cmd=(mpirun -n "$workers" --oversubscribe "$ANALYZER" "$tmp_toml")
+		else
+			cmd=("$ANALYZER" "$tmp_toml")
+		fi
+
+		if "${cmd[@]}" >"$log_file" 2>&1; then
+			local ms
+			ms=$(grep -oE '[0-9.]+ ms' "$log_file" | tail -1 | awk '{print $1}')
+			printf "      %-20s %10s ms\n" "$variant_name" "$ms"
+			ln -sf "$(basename "$streams_out")" "$out/streams.h5"
+			rm -f "$tmp_toml"
+			return 0
+		else
+			printf "      %-20s FAIL\n" "$variant_name"
+			rm -f "$tmp_toml"
+			return 1
+		fi
+	}
+
+	run_variant "sequential" 1 || ANA_STATUS[$stem]="FAIL"
+	for t in 2 4 8; do run_variant "pthreads" "$t" || ANA_STATUS[$stem]="FAIL"; done
+	for t in 2 4 8; do run_variant "openmp" "$t" || ANA_STATUS[$stem]="FAIL"; done
+	for p in 2 4; do run_variant "mpi" "$p" || ANA_STATUS[$stem]="FAIL"; done
+
+	if [[ "${ANA_STATUS[$stem]}" == "FAIL" ]]; then
+		printf "    analyzer   FAIL (one or more variants failed)\n"
 		STATS_STATUS[$stem]="SKIP"
 		VIS_STATUS[$stem]="SKIP"
 		continue

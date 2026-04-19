@@ -29,4 +29,42 @@ echo "=== simulator ==="
 
 echo ""
 echo "=== analyzer ==="
-srun --mpi=pmix -n "$SLURM_NTASKS" "$PROJECT_DIR/analyzer_run" "configs/$STEM.toml"
+
+run_variant() {
+	local solver=$1 workers=$2
+	local variant_name="${solver}_${workers}"
+	local out="$PROJECT_DIR/data/$STEM"
+	local log_file="$out/analyzer_${variant_name}.txt"
+	local streams_out="$out/streams_${variant_name}.h5"
+
+	local tmp_toml="$out/${STEM}.toml"
+	sed '/^\[analyzer\]/,$d' "$PROJECT_DIR/configs/$STEM.toml" >"$tmp_toml"
+	printf "\n[analyzer]\nsolver = \"%s\"\nthreads = %d\noutput = \"%s\"\n" \
+		"$solver" "$workers" "$streams_out" >>"$tmp_toml"
+
+	if [[ "$solver" == "mpi" ]]; then
+		srun --mpi=pmix -n "$workers" "$PROJECT_DIR/analyzer_run" "$tmp_toml" \
+			>"$log_file" 2>&1
+	else
+		"$PROJECT_DIR/analyzer_run" "$tmp_toml" >"$log_file" 2>&1
+	fi
+	local status=$?
+
+	rm -f "$tmp_toml"
+	if [[ $status -eq 0 ]]; then
+		local ms
+		ms=$(grep -oE '[0-9.]+ ms' "$log_file" | tail -1 | awk '{print $1}')
+		printf "  %-20s %10s ms\n" "$variant_name" "$ms"
+		ln -sf "$(basename "$streams_out")" "$out/streams.h5"
+		return 0
+	else
+		printf "  %-20s FAIL\n" "$variant_name"
+		return 1
+	fi
+}
+
+mkdir -p "$PROJECT_DIR/data/$STEM"
+run_variant "sequential" 1
+for t in 2 4 8; do run_variant "pthreads" "$t"; done
+for t in 2 4 8; do run_variant "openmp" "$t"; done
+for p in 2 4; do run_variant "mpi" "$p"; done
