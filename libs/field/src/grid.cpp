@@ -65,9 +65,11 @@ void Grid::unite(std::size_t a, std::size_t b) {
             return;
         }
 
-        // Always merge the smaller index into the larger one to keep the DSU
-        // structure deterministic and avoid cycles.
-        if (a < b) {
+        // Always merge the larger index into the smaller one so findRoot()
+        // returns the minimum index in the component. MPI AllReduce(MIN)
+        // propagates these minimum roots across ranks; unite() must agree
+        // on the same convention or it undoes the convergence.
+        if (a > b) {
             std::swap(a, b);
         }
 
