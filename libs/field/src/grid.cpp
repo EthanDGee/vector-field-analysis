@@ -59,8 +59,8 @@ void Grid::unite(std::size_t a, std::size_t b) {
         }
 
         std::size_t expected = b;
-        if (successor_[b].compare_exchange_weak(expected, a,
-                std::memory_order_release, std::memory_order_relaxed)) {
+        if (successor_[b].compare_exchange_weak(expected, a, std::memory_order_release,
+                                                std::memory_order_relaxed)) {
             return;
         }
     }

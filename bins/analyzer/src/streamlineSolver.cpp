@@ -40,7 +40,7 @@ StreamlineSolver::reconstructPathsDSU(const Field::Grid& grid,
                                      static_cast<int>(i % colCount)};
     }
 
-    // 5. Slice buffer into paths — one contiguous segment per non-empty root (O(n)).
+    // 5. Slice buffer into paths -- one contiguous segment per non-empty root (O(n)).
     std::vector<Field::Path> output;
     for (std::size_t r = 0; r < total; ++r) {
         if (counts[r] > 0) {
