@@ -98,8 +98,8 @@ static void writeAndReport(const std::string& outPath,
 
 static void verifyAll(const RunResult& sequential, const RunResult& pthreads,
                       [[maybe_unused]] const RunResult& openmp,
-                      [[maybe_unused]] const RunResult& mpi, [[maybe_unused]] const RunResult& cuda,
-                      [[maybe_unused]] const RunResult& cudaFull, bool runParallel,
+                      [[maybe_unused]] const RunResult& mpi,
+                      [[maybe_unused]] const RunResult& cuda, bool runParallel,
                       [[maybe_unused]] bool runMpi) {
     if (runParallel) {
         verify(sequential.streams, pthreads.streams, "pthreads");
@@ -114,13 +114,11 @@ static void verifyAll(const RunResult& sequential, const RunResult& pthreads,
 #endif
 #ifdef ENABLE_CUDA_SOLVER
     verify(sequential.streams, cuda.streams, "cuda");
-    verify(sequential.streams, cudaFull.streams, "cuda_full");
 #endif
 }
 
 void runAll(const Field::TimeSeries& field, unsigned int threadCount,
-            [[maybe_unused]] unsigned int cudaBlockSize,
-            [[maybe_unused]] unsigned int cudaFullBlockSize, int mpiRank, int mpiSize,
+            [[maybe_unused]] unsigned int cudaBlockSize, int mpiRank, int mpiSize,
             const std::string& outPath) {
     const bool runParallel = threadCount > 1;
 #ifdef USE_MPI
@@ -144,7 +142,6 @@ void runAll(const Field::TimeSeries& field, unsigned int threadCount,
 #endif
 #ifdef ENABLE_CUDA_SOLVER
     RunResult cudaResult{};
-    RunResult cudaFullResult{};
 #endif
     if (mpiRank == 0) {
         auto sequentialSolver = makeSolver("sequential", threadCount);
@@ -160,8 +157,6 @@ void runAll(const Field::TimeSeries& field, unsigned int threadCount,
 #ifdef ENABLE_CUDA_SOLVER
         auto cudaSolver = makeSolver("cuda", threadCount, cudaBlockSize);
         cudaResult = runSolver(*cudaSolver, field);
-        auto cudaFullSolver = makeSolver("cuda_full", threadCount, cudaFullBlockSize);
-        cudaFullResult = runSolver(*cudaFullSolver, field);
 #endif
         const std::string sequentialLabel = "sequential";
         std::vector<std::size_t> labelSizes = {sequentialLabel.size()};
@@ -182,8 +177,6 @@ void runAll(const Field::TimeSeries& field, unsigned int threadCount,
 #ifdef ENABLE_CUDA_SOLVER
         labelSizes.push_back(
             std::string("cuda (blk=" + std::to_string(cudaBlockSize) + ")").size());
-        labelSizes.push_back(
-            std::string("cuda_full (blk=" + std::to_string(cudaFullBlockSize) + ")").size());
 #endif
         const int labelWidth =
             static_cast<int>(*std::max_element(labelSizes.begin(), labelSizes.end())) + 2;
@@ -227,12 +220,8 @@ void runAll(const Field::TimeSeries& field, unsigned int threadCount,
         printTiming("cuda (blk=" + std::to_string(cudaBlockSize) + ")",
                     cudaResult.elapsedMilliseconds, labelWidth,
                     sequentialResult.elapsedMilliseconds);
-        printTiming("cuda_full (blk=" + std::to_string(cudaFullBlockSize) + ")",
-                    cudaFullResult.elapsedMilliseconds, labelWidth,
-                    sequentialResult.elapsedMilliseconds);
 #else
         std::cout << "(cuda skipped -- rebuild with -DENABLE_CUDA=ON)\n";
-        std::cout << "(cuda_full skipped -- rebuild with -DENABLE_CUDA=ON)\n";
 #endif
 
         verifyAll(sequentialResult, pthreadsResult,
@@ -247,9 +236,9 @@ void runAll(const Field::TimeSeries& field, unsigned int threadCount,
                   RunResult{},
 #endif
 #ifdef ENABLE_CUDA_SOLVER
-                  cudaResult, cudaFullResult,
+                  cudaResult,
 #else
-                  RunResult{}, RunResult{},
+                  RunResult{},
 #endif
                   runParallel, runMpi);
 
@@ -258,8 +247,7 @@ void runAll(const Field::TimeSeries& field, unsigned int threadCount,
 }
 
 void runOne(const std::string& solverName, const Field::TimeSeries& field, unsigned int threadCount,
-            [[maybe_unused]] unsigned int cudaBlockSize,
-            [[maybe_unused]] unsigned int cudaFullBlockSize, int mpiRank, int mpiSize,
+            [[maybe_unused]] unsigned int cudaBlockSize, int mpiRank, int mpiSize,
             const std::string& outPath) {
     RunResult result{};
     if (solverName == "mpi") {
@@ -270,15 +258,12 @@ void runOne(const std::string& solverName, const Field::TimeSeries& field, unsig
         if (solverName == "cuda") {
             auto solver = makeSolver(solverName, threadCount, cudaBlockSize);
             result = runSolver(*solver, field);
-        } else if (solverName == "cuda_full") {
-            auto solver = makeSolver(solverName, threadCount, cudaFullBlockSize);
-            result = runSolver(*solver, field);
         } else {
             auto solver = makeSolver(solverName, threadCount);
             result = runSolver(*solver, field);
         }
 #else
-        if (solverName == "cuda" || solverName == "cuda_full") {
+        if (solverName == "cuda") {
             std::cerr << "Error: solver \"" << solverName
                       << "\" requires rebuilding with -DENABLE_CUDA=ON\n";
             return;
@@ -303,8 +288,6 @@ void runOne(const std::string& solverName, const Field::TimeSeries& field, unsig
 #ifdef ENABLE_CUDA_SOLVER
         } else if (solverName == "cuda") {
             label += " (blk=" + std::to_string(cudaBlockSize) + ")";
-        } else if (solverName == "cuda_full") {
-            label += " (blk=" + std::to_string(cudaFullBlockSize) + ")";
 #endif
         }
         std::cout << label << "  " << result.elapsedMilliseconds << " ms\n";
