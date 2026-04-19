@@ -1,0 +1,854 @@
+[u6074053@lonepeak2:vector-field-analysis]$ ./scripts/chpc/logs.sh
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_1024x1024/analyzer_stderr.txt ===
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_1024x1024/analyzer_stdout.txt ===
+Field:   data/vortex_1024x1024/field.h5
+Grid:    1024 x 1024  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+sequential  114.45 ms
+
+Precomputed 5 streamlines across 1 steps  (5.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090058/tmp.Ef6oVYFw3e/sequential.h5  (8.0 MB)
+Field:   data/vortex_1024x1024/field.h5
+Grid:    1024 x 1024  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (2 thr)  102.829 ms
+
+Precomputed 5 streamlines across 1 steps  (5.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090058/tmp.Ef6oVYFw3e/pthreads (2t).h5  (8.0 MB)
+Field:   data/vortex_1024x1024/field.h5
+Grid:    1024 x 1024  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (4 thr)  95.5882 ms
+
+Precomputed 5 streamlines across 1 steps  (5.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090058/tmp.Ef6oVYFw3e/pthreads (4t).h5  (8.0 MB)
+Field:   data/vortex_1024x1024/field.h5
+Grid:    1024 x 1024  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (8 thr)  93.9325 ms
+
+Precomputed 5 streamlines across 1 steps  (5.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090058/tmp.Ef6oVYFw3e/pthreads (8t).h5  (8.0 MB)
+Field:   data/vortex_1024x1024/field.h5
+Grid:    1024 x 1024  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (2 thr)  98.1421 ms
+
+Precomputed 5 streamlines across 1 steps  (5.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090058/tmp.Ef6oVYFw3e/openmp (2t).h5  (8.0 MB)
+Field:   data/vortex_1024x1024/field.h5
+Grid:    1024 x 1024  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (4 thr)  91.0855 ms
+
+Precomputed 5 streamlines across 1 steps  (5.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090058/tmp.Ef6oVYFw3e/openmp (4t).h5  (8.0 MB)
+Field:   data/vortex_1024x1024/field.h5
+Grid:    1024 x 1024  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (8 thr)  92.2175 ms
+
+Precomputed 5 streamlines across 1 steps  (5.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090058/tmp.Ef6oVYFw3e/openmp (8t).h5  (8.0 MB)
+Field:   data/vortex_1024x1024/field.h5
+Grid:    1024 x 1024  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+mpi (2 rank(s))  170.991 ms
+
+Precomputed 5 streamlines across 1 steps  (5.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090058/tmp.Ef6oVYFw3e/mpi (2 ranks).h5  (8.0 MB)
+Field:   data/vortex_1024x1024/field.h5
+Grid:    1024 x 1024  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+mpi (4 rank(s))  231.579 ms
+
+Precomputed 5 streamlines across 1 steps  (5.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090058/tmp.Ef6oVYFw3e/mpi (4 ranks).h5  (8.0 MB)
+Field:   data/vortex_1024x1024/field.h5
+Grid:    1024 x 1024  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=128)  415.506 ms
+
+Precomputed 5 streamlines across 1 steps  (5.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090058/tmp.Ef6oVYFw3e/cuda (blk=128).h5  (8.0 MB)
+Field:   data/vortex_1024x1024/field.h5
+Grid:    1024 x 1024  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=256)  323.649 ms
+
+Precomputed 5 streamlines across 1 steps  (5.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090058/tmp.Ef6oVYFw3e/cuda (blk=256).h5  (8.0 MB)
+Field:   data/vortex_1024x1024/field.h5
+Grid:    1024 x 1024  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=512)  358.303 ms
+
+Precomputed 5 streamlines across 1 steps  (5.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090058/tmp.Ef6oVYFw3e/cuda (blk=512).h5  (8.0 MB)
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_1024x1024/simulator_stderr.txt ===
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_1024x1024/simulator_stdout.txt ===
+Config:  configs/vortex_1024x1024.toml
+Grid:    1024 x 1024  |  x [-1, 1]  y [-1, 1]
+Steps:   1  (dt=0.01, viscosity=0.03)
+Layers:  vortex(s=1)
+
+Generating... done in 48.5825 ms
+Wrote data/vortex_1024x1024/field.h5  (8.0 MB)
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_1024x1024/stderr.log ===
+-------------------------------------------------------------------------------
+The following dependent module(s) are not currently loaded: zlib/1.2.11 (required by: openmpi/5.0.8, hdf5/1.14.6)
+-------------------------------------------------------------------------------
+
+The following have been reloaded with a version change:
+  1) zlib/1.2.11 => zlib/1.2.13
+
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_1024x1024/stdout.log ===
+=== job info ===
+Sun Apr 19 16:01:48 MDT 2026
+host: lp246
+stem: vortex_1024x1024
+
+=== simulator ===
+
+=== analyzer ===
+  OK (reference): sequential                        114.450 ms
+  OK (match):     pthreads (2t)                     102.829 ms  (1.11x vs sequential)
+  OK (match):     pthreads (4t)                      95.588 ms  (1.20x vs sequential)
+  OK (match):     pthreads (8t)                      93.933 ms  (1.22x vs sequential)
+  OK (match):     openmp (2t)                        98.142 ms  (1.17x vs sequential)
+  OK (match):     openmp (4t)                        91.085 ms  (1.26x vs sequential)
+  OK (match):     openmp (8t)                        92.217 ms  (1.24x vs sequential)
+  OK (match):     mpi (2 ranks)                     170.991 ms  (0.67x vs sequential)
+  OK (match):     mpi (4 ranks)                     231.579 ms  (0.49x vs sequential)
+  OK (match):     cuda (blk=128)                    415.506 ms  (0.28x vs sequential)
+  OK (match):     cuda (blk=256)                    323.649 ms  (0.35x vs sequential)
+  OK (match):     cuda (blk=512)                    358.303 ms  (0.32x vs sequential)
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_128x128/analyzer_stderr.txt ===
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_128x128/analyzer_stdout.txt ===
+Field:   data/vortex_128x128/field.h5
+Grid:    128 x 128  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+sequential  1.32658 ms
+
+Precomputed 2 streamlines across 1 steps  (2.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090059/tmp.VljBihYngl/sequential.h5  (133.8 KB)
+Field:   data/vortex_128x128/field.h5
+Grid:    128 x 128  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (2 thr)  1.36116 ms
+
+Precomputed 2 streamlines across 1 steps  (2.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090059/tmp.VljBihYngl/pthreads (2t).h5  (133.8 KB)
+Field:   data/vortex_128x128/field.h5
+Grid:    128 x 128  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (4 thr)  1.36083 ms
+
+Precomputed 2 streamlines across 1 steps  (2.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090059/tmp.VljBihYngl/pthreads (4t).h5  (133.8 KB)
+Field:   data/vortex_128x128/field.h5
+Grid:    128 x 128  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (8 thr)  1.5908 ms
+
+Precomputed 2 streamlines across 1 steps  (2.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090059/tmp.VljBihYngl/pthreads (8t).h5  (133.8 KB)
+Field:   data/vortex_128x128/field.h5
+Grid:    128 x 128  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (2 thr)  1.18865 ms
+
+Precomputed 2 streamlines across 1 steps  (2.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090059/tmp.VljBihYngl/openmp (2t).h5  (133.8 KB)
+Field:   data/vortex_128x128/field.h5
+Grid:    128 x 128  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (4 thr)  1.47658 ms
+
+Precomputed 2 streamlines across 1 steps  (2.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090059/tmp.VljBihYngl/openmp (4t).h5  (133.8 KB)
+Field:   data/vortex_128x128/field.h5
+Grid:    128 x 128  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (8 thr)  1.50564 ms
+
+Precomputed 2 streamlines across 1 steps  (2.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090059/tmp.VljBihYngl/openmp (8t).h5  (133.8 KB)
+Field:   data/vortex_128x128/field.h5
+Grid:    128 x 128  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+mpi (2 rank(s))  2.08364 ms
+
+Precomputed 2 streamlines across 1 steps  (2.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090059/tmp.VljBihYngl/mpi (2 ranks).h5  (133.8 KB)
+Field:   data/vortex_128x128/field.h5
+Grid:    128 x 128  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+mpi (4 rank(s))  2.55525 ms
+
+Precomputed 2 streamlines across 1 steps  (2.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090059/tmp.VljBihYngl/mpi (4 ranks).h5  (133.8 KB)
+Field:   data/vortex_128x128/field.h5
+Grid:    128 x 128  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=128)  316.83 ms
+
+Precomputed 2 streamlines across 1 steps  (2.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090059/tmp.VljBihYngl/cuda (blk=128).h5  (133.8 KB)
+Field:   data/vortex_128x128/field.h5
+Grid:    128 x 128  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=256)  294.014 ms
+
+Precomputed 2 streamlines across 1 steps  (2.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090059/tmp.VljBihYngl/cuda (blk=256).h5  (133.8 KB)
+Field:   data/vortex_128x128/field.h5
+Grid:    128 x 128  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=512)  341.805 ms
+
+Precomputed 2 streamlines across 1 steps  (2.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090059/tmp.VljBihYngl/cuda (blk=512).h5  (133.8 KB)
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_128x128/simulator_stderr.txt ===
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_128x128/simulator_stdout.txt ===
+Config:  configs/vortex_128x128.toml
+Grid:    128 x 128  |  x [-1, 1]  y [-1, 1]
+Steps:   1  (dt=0.01, viscosity=0.03)
+Layers:  vortex(s=1)
+
+Generating... done in 0.973949 ms
+Wrote data/vortex_128x128/field.h5  (96 B)
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_128x128/stderr.log ===
+-------------------------------------------------------------------------------
+The following dependent module(s) are not currently loaded: zlib/1.2.11 (required by: openmpi/5.0.8, hdf5/1.14.6)
+-------------------------------------------------------------------------------
+
+The following have been reloaded with a version change:
+  1) zlib/1.2.11 => zlib/1.2.13
+
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_128x128/stdout.log ===
+=== job info ===
+Sun Apr 19 16:01:49 MDT 2026
+host: lp247
+stem: vortex_128x128
+
+=== simulator ===
+
+=== analyzer ===
+  OK (reference): sequential                          1.327 ms
+  OK (match):     pthreads (2t)                       1.361 ms  (0.97x vs sequential)
+  OK (match):     pthreads (4t)                       1.361 ms  (0.97x vs sequential)
+  OK (match):     pthreads (8t)                       1.591 ms  (0.83x vs sequential)
+  OK (match):     openmp (2t)                         1.189 ms  (1.12x vs sequential)
+  OK (match):     openmp (4t)                         1.477 ms  (0.90x vs sequential)
+  OK (match):     openmp (8t)                         1.506 ms  (0.88x vs sequential)
+  OK (match):     mpi (2 ranks)                       2.084 ms  (0.64x vs sequential)
+  OK (match):     mpi (4 ranks)                       2.555 ms  (0.52x vs sequential)
+  OK (match):     cuda (blk=128)                    316.830 ms  (0.00x vs sequential)
+  OK (match):     cuda (blk=256)                    294.014 ms  (0.00x vs sequential)
+  OK (match):     cuda (blk=512)                    341.805 ms  (0.00x vs sequential)
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_2048x2048/analyzer_stderr.txt ===
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_2048x2048/analyzer_stdout.txt ===
+Field:   data/vortex_2048x2048/field.h5
+Grid:    2048 x 2048  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+sequential  482.998 ms
+
+Precomputed 9 streamlines across 1 steps  (9.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090060/tmp.oHCvClqqwG/sequential.h5  (32.0 MB)
+Field:   data/vortex_2048x2048/field.h5
+Grid:    2048 x 2048  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (2 thr)  414.723 ms
+
+Precomputed 9 streamlines across 1 steps  (9.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090060/tmp.oHCvClqqwG/pthreads (2t).h5  (32.0 MB)
+Field:   data/vortex_2048x2048/field.h5
+Grid:    2048 x 2048  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (4 thr)  385.29 ms
+
+Precomputed 9 streamlines across 1 steps  (9.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090060/tmp.oHCvClqqwG/pthreads (4t).h5  (32.0 MB)
+Field:   data/vortex_2048x2048/field.h5
+Grid:    2048 x 2048  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (8 thr)  383.941 ms
+
+Precomputed 9 streamlines across 1 steps  (9.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090060/tmp.oHCvClqqwG/pthreads (8t).h5  (32.0 MB)
+Field:   data/vortex_2048x2048/field.h5
+Grid:    2048 x 2048  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (2 thr)  400.694 ms
+
+Precomputed 9 streamlines across 1 steps  (9.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090060/tmp.oHCvClqqwG/openmp (2t).h5  (32.0 MB)
+Field:   data/vortex_2048x2048/field.h5
+Grid:    2048 x 2048  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (4 thr)  368.367 ms
+
+Precomputed 9 streamlines across 1 steps  (9.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090060/tmp.oHCvClqqwG/openmp (4t).h5  (32.0 MB)
+Field:   data/vortex_2048x2048/field.h5
+Grid:    2048 x 2048  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (8 thr)  368.172 ms
+
+Precomputed 9 streamlines across 1 steps  (9.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090060/tmp.oHCvClqqwG/openmp (8t).h5  (32.0 MB)
+Field:   data/vortex_2048x2048/field.h5
+Grid:    2048 x 2048  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+mpi (2 rank(s))  750.277 ms
+
+Precomputed 9 streamlines across 1 steps  (9.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090060/tmp.oHCvClqqwG/mpi (2 ranks).h5  (32.0 MB)
+Field:   data/vortex_2048x2048/field.h5
+Grid:    2048 x 2048  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+mpi (4 rank(s))  943.378 ms
+
+Precomputed 9 streamlines across 1 steps  (9.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090060/tmp.oHCvClqqwG/mpi (4 ranks).h5  (32.0 MB)
+Field:   data/vortex_2048x2048/field.h5
+Grid:    2048 x 2048  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=128)  580.552 ms
+
+Precomputed 9 streamlines across 1 steps  (9.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090060/tmp.oHCvClqqwG/cuda (blk=128).h5  (32.0 MB)
+Field:   data/vortex_2048x2048/field.h5
+Grid:    2048 x 2048  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=256)  482.126 ms
+
+Precomputed 9 streamlines across 1 steps  (9.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090060/tmp.oHCvClqqwG/cuda (blk=256).h5  (32.0 MB)
+Field:   data/vortex_2048x2048/field.h5
+Grid:    2048 x 2048  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=512)  501.236 ms
+
+Precomputed 9 streamlines across 1 steps  (9.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090060/tmp.oHCvClqqwG/cuda (blk=512).h5  (32.0 MB)
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_2048x2048/simulator_stderr.txt ===
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_2048x2048/simulator_stdout.txt ===
+Config:  configs/vortex_2048x2048.toml
+Grid:    2048 x 2048  |  x [-1, 1]  y [-1, 1]
+Steps:   1  (dt=0.01, viscosity=0.03)
+Layers:  vortex(s=1)
+
+Generating... done in 202.558 ms
+Wrote data/vortex_2048x2048/field.h5  (32.0 MB)
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_2048x2048/stderr.log ===
+-------------------------------------------------------------------------------
+The following dependent module(s) are not currently loaded: zlib/1.2.11 (required by: openmpi/5.0.8, hdf5/1.14.6)
+-------------------------------------------------------------------------------
+
+The following have been reloaded with a version change:
+  1) zlib/1.2.11 => zlib/1.2.13
+
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_2048x2048/stdout.log ===
+=== job info ===
+Sun Apr 19 16:02:17 MDT 2026
+host: lp246
+stem: vortex_2048x2048
+
+=== simulator ===
+
+=== analyzer ===
+  OK (reference): sequential                        482.998 ms
+  OK (match):     pthreads (2t)                     414.723 ms  (1.16x vs sequential)
+  OK (match):     pthreads (4t)                     385.290 ms  (1.25x vs sequential)
+  OK (match):     pthreads (8t)                     383.941 ms  (1.26x vs sequential)
+  OK (match):     openmp (2t)                       400.694 ms  (1.21x vs sequential)
+  OK (match):     openmp (4t)                       368.367 ms  (1.31x vs sequential)
+  OK (match):     openmp (8t)                       368.172 ms  (1.31x vs sequential)
+  OK (match):     mpi (2 ranks)                     750.277 ms  (0.64x vs sequential)
+  OK (match):     mpi (4 ranks)                     943.378 ms  (0.51x vs sequential)
+  OK (match):     cuda (blk=128)                    580.552 ms  (0.83x vs sequential)
+  OK (match):     cuda (blk=256)                    482.126 ms  (1.00x vs sequential)
+  OK (match):     cuda (blk=512)                    501.236 ms  (0.96x vs sequential)
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_256x256/analyzer_stderr.txt ===
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_256x256/analyzer_stdout.txt ===
+Field:   data/vortex_256x256/field.h5
+Grid:    256 x 256  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+sequential  6.13673 ms
+
+Precomputed 1 streamlines across 1 steps  (1.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090061/tmp.etTeTwfvLD/sequential.h5  (517.8 KB)
+Field:   data/vortex_256x256/field.h5
+Grid:    256 x 256  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (2 thr)  5.89236 ms
+
+Precomputed 1 streamlines across 1 steps  (1.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090061/tmp.etTeTwfvLD/pthreads (2t).h5  (517.8 KB)
+Field:   data/vortex_256x256/field.h5
+Grid:    256 x 256  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (4 thr)  5.65266 ms
+
+Precomputed 1 streamlines across 1 steps  (1.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090061/tmp.etTeTwfvLD/pthreads (4t).h5  (517.8 KB)
+Field:   data/vortex_256x256/field.h5
+Grid:    256 x 256  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (8 thr)  5.76258 ms
+
+Precomputed 1 streamlines across 1 steps  (1.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090061/tmp.etTeTwfvLD/pthreads (8t).h5  (517.8 KB)
+Field:   data/vortex_256x256/field.h5
+Grid:    256 x 256  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (2 thr)  5.49905 ms
+
+Precomputed 1 streamlines across 1 steps  (1.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090061/tmp.etTeTwfvLD/openmp (2t).h5  (517.8 KB)
+Field:   data/vortex_256x256/field.h5
+Grid:    256 x 256  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (4 thr)  5.21828 ms
+
+Precomputed 1 streamlines across 1 steps  (1.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090061/tmp.etTeTwfvLD/openmp (4t).h5  (517.8 KB)
+Field:   data/vortex_256x256/field.h5
+Grid:    256 x 256  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (8 thr)  6.7414 ms
+
+Precomputed 1 streamlines across 1 steps  (1.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090061/tmp.etTeTwfvLD/openmp (8t).h5  (517.8 KB)
+Field:   data/vortex_256x256/field.h5
+Grid:    256 x 256  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+mpi (2 rank(s))  9.42647 ms
+
+Precomputed 1 streamlines across 1 steps  (1.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090061/tmp.etTeTwfvLD/mpi (2 ranks).h5  (517.8 KB)
+Field:   data/vortex_256x256/field.h5
+Grid:    256 x 256  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+mpi (4 rank(s))  11.2513 ms
+
+Precomputed 1 streamlines across 1 steps  (1.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090061/tmp.etTeTwfvLD/mpi (4 ranks).h5  (517.8 KB)
+Field:   data/vortex_256x256/field.h5
+Grid:    256 x 256  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=128)  327.4 ms
+
+Precomputed 1 streamlines across 1 steps  (1.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090061/tmp.etTeTwfvLD/cuda (blk=128).h5  (517.8 KB)
+Field:   data/vortex_256x256/field.h5
+Grid:    256 x 256  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=256)  294.177 ms
+
+Precomputed 1 streamlines across 1 steps  (1.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090061/tmp.etTeTwfvLD/cuda (blk=256).h5  (517.8 KB)
+Field:   data/vortex_256x256/field.h5
+Grid:    256 x 256  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=512)  327.523 ms
+
+Precomputed 1 streamlines across 1 steps  (1.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090061/tmp.etTeTwfvLD/cuda (blk=512).h5  (517.8 KB)
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_256x256/simulator_stderr.txt ===
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_256x256/simulator_stdout.txt ===
+Config:  configs/vortex_256x256.toml
+Grid:    256 x 256  |  x [-1, 1]  y [-1, 1]
+Steps:   1  (dt=0.01, viscosity=0.03)
+Layers:  vortex(s=1)
+
+Generating... done in 3.34981 ms
+Wrote data/vortex_256x256/field.h5  (520.7 KB)
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_256x256/stderr.log ===
+-------------------------------------------------------------------------------
+The following dependent module(s) are not currently loaded: zlib/1.2.11 (required by: openmpi/5.0.8, hdf5/1.14.6)
+-------------------------------------------------------------------------------
+
+The following have been reloaded with a version change:
+  1) zlib/1.2.11 => zlib/1.2.13
+
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_256x256/stdout.log ===
+=== job info ===
+Sun Apr 19 16:02:16 MDT 2026
+host: lp247
+stem: vortex_256x256
+
+=== simulator ===
+
+=== analyzer ===
+  OK (reference): sequential                          6.137 ms
+  OK (match):     pthreads (2t)                       5.892 ms  (1.04x vs sequential)
+  OK (match):     pthreads (4t)                       5.653 ms  (1.09x vs sequential)
+  OK (match):     pthreads (8t)                       5.763 ms  (1.06x vs sequential)
+  OK (match):     openmp (2t)                         5.499 ms  (1.12x vs sequential)
+  OK (match):     openmp (4t)                         5.218 ms  (1.18x vs sequential)
+  OK (match):     openmp (8t)                         6.741 ms  (0.91x vs sequential)
+  OK (match):     mpi (2 ranks)                       9.426 ms  (0.65x vs sequential)
+  OK (match):     mpi (4 ranks)                      11.251 ms  (0.55x vs sequential)
+  OK (match):     cuda (blk=128)                    327.400 ms  (0.02x vs sequential)
+  OK (match):     cuda (blk=256)                    294.177 ms  (0.02x vs sequential)
+  OK (match):     cuda (blk=512)                    327.523 ms  (0.02x vs sequential)
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_4096x4096/analyzer_stderr.txt ===
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_4096x4096/analyzer_stdout.txt ===
+Field:   data/vortex_4096x4096/field.h5
+Grid:    4096 x 4096  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+sequential  1998.59 ms
+
+Precomputed 7 streamlines across 1 steps  (7.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090062/tmp.C4HVtm3yq0/sequential.h5  (128.0 MB)
+Field:   data/vortex_4096x4096/field.h5
+Grid:    4096 x 4096  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (2 thr)  1751.5 ms
+
+Precomputed 7 streamlines across 1 steps  (7.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090062/tmp.C4HVtm3yq0/pthreads (2t).h5  (128.0 MB)
+Field:   data/vortex_4096x4096/field.h5
+Grid:    4096 x 4096  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (4 thr)  1625.63 ms
+
+Precomputed 7 streamlines across 1 steps  (7.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090062/tmp.C4HVtm3yq0/pthreads (4t).h5  (128.0 MB)
+Field:   data/vortex_4096x4096/field.h5
+Grid:    4096 x 4096  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (8 thr)  1613.76 ms
+
+Precomputed 7 streamlines across 1 steps  (7.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090062/tmp.C4HVtm3yq0/pthreads (8t).h5  (128.0 MB)
+Field:   data/vortex_4096x4096/field.h5
+Grid:    4096 x 4096  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (2 thr)  1683.38 ms
+
+Precomputed 7 streamlines across 1 steps  (7.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090062/tmp.C4HVtm3yq0/openmp (2t).h5  (128.0 MB)
+Field:   data/vortex_4096x4096/field.h5
+Grid:    4096 x 4096  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (4 thr)  1558.4 ms
+
+Precomputed 7 streamlines across 1 steps  (7.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090062/tmp.C4HVtm3yq0/openmp (4t).h5  (128.0 MB)
+Field:   data/vortex_4096x4096/field.h5
+Grid:    4096 x 4096  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (8 thr)  1548.67 ms
+
+Precomputed 7 streamlines across 1 steps  (7.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090062/tmp.C4HVtm3yq0/openmp (8t).h5  (128.0 MB)
+Field:   data/vortex_4096x4096/field.h5
+Grid:    4096 x 4096  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+mpi (2 rank(s))  3108.24 ms
+
+Precomputed 7 streamlines across 1 steps  (7.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090062/tmp.C4HVtm3yq0/mpi (2 ranks).h5  (128.0 MB)
+Field:   data/vortex_4096x4096/field.h5
+Grid:    4096 x 4096  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+mpi (4 rank(s))  3940 ms
+
+Precomputed 7 streamlines across 1 steps  (7.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090062/tmp.C4HVtm3yq0/mpi (4 ranks).h5  (128.0 MB)
+Field:   data/vortex_4096x4096/field.h5
+Grid:    4096 x 4096  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=128)  1148.43 ms
+
+Precomputed 7 streamlines across 1 steps  (7.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090062/tmp.C4HVtm3yq0/cuda (blk=128).h5  (128.0 MB)
+Field:   data/vortex_4096x4096/field.h5
+Grid:    4096 x 4096  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=256)  1099 ms
+
+Precomputed 7 streamlines across 1 steps  (7.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090062/tmp.C4HVtm3yq0/cuda (blk=256).h5  (128.0 MB)
+Field:   data/vortex_4096x4096/field.h5
+Grid:    4096 x 4096  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=512)  1128.91 ms
+
+Precomputed 7 streamlines across 1 steps  (7.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090062/tmp.C4HVtm3yq0/cuda (blk=512).h5  (128.0 MB)
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_4096x4096/simulator_stderr.txt ===
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_4096x4096/simulator_stdout.txt ===
+Config:  configs/vortex_4096x4096.toml
+Grid:    4096 x 4096  |  x [-1, 1]  y [-1, 1]
+Steps:   1  (dt=0.01, viscosity=0.03)
+Layers:  vortex(s=1)
+
+Generating... done in 831.461 ms
+Wrote data/vortex_4096x4096/field.h5  (128.0 MB)
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_4096x4096/stderr.log ===
+-------------------------------------------------------------------------------
+The following dependent module(s) are not currently loaded: zlib/1.2.11 (required by: openmpi/5.0.8, hdf5/1.14.6)
+-------------------------------------------------------------------------------
+
+The following have been reloaded with a version change:
+  1) zlib/1.2.11 => zlib/1.2.13
+
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_4096x4096/stdout.log ===
+=== job info ===
+Sun Apr 19 16:02:42 MDT 2026
+host: lp247
+stem: vortex_4096x4096
+
+=== simulator ===
+
+=== analyzer ===
+  OK (reference): sequential                       1998.590 ms
+  OK (match):     pthreads (2t)                    1751.500 ms  (1.14x vs sequential)
+  OK (match):     pthreads (4t)                    1625.630 ms  (1.23x vs sequential)
+  OK (match):     pthreads (8t)                    1613.760 ms  (1.24x vs sequential)
+  OK (match):     openmp (2t)                      1683.380 ms  (1.19x vs sequential)
+  OK (match):     openmp (4t)                      1558.400 ms  (1.28x vs sequential)
+  OK (match):     openmp (8t)                      1548.670 ms  (1.29x vs sequential)
+  OK (match):     mpi (2 ranks)                    3108.240 ms  (0.64x vs sequential)
+  OK (match):     mpi (4 ranks)                    3940.000 ms  (0.51x vs sequential)
+  OK (match):     cuda (blk=128)                   1148.430 ms  (1.74x vs sequential)
+  OK (match):     cuda (blk=256)                   1099.000 ms  (1.82x vs sequential)
+  OK (match):     cuda (blk=512)                   1128.910 ms  (1.77x vs sequential)
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_512x512/analyzer_stderr.txt ===
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_512x512/analyzer_stdout.txt ===
+Field:   data/vortex_512x512/field.h5
+Grid:    512 x 512  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+sequential  26.1027 ms
+
+Precomputed 3 streamlines across 1 steps  (3.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090063/tmp.zv4Hdqw4sW/sequential.h5  (2.0 MB)
+Field:   data/vortex_512x512/field.h5
+Grid:    512 x 512  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (2 thr)  22.4551 ms
+
+Precomputed 3 streamlines across 1 steps  (3.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090063/tmp.zv4Hdqw4sW/pthreads (2t).h5  (2.0 MB)
+Field:   data/vortex_512x512/field.h5
+Grid:    512 x 512  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (4 thr)  20.9807 ms
+
+Precomputed 3 streamlines across 1 steps  (3.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090063/tmp.zv4Hdqw4sW/pthreads (4t).h5  (2.0 MB)
+Field:   data/vortex_512x512/field.h5
+Grid:    512 x 512  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+pthreads (8 thr)  21.2045 ms
+
+Precomputed 3 streamlines across 1 steps  (3.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090063/tmp.zv4Hdqw4sW/pthreads (8t).h5  (2.0 MB)
+Field:   data/vortex_512x512/field.h5
+Grid:    512 x 512  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (2 thr)  22.1816 ms
+
+Precomputed 3 streamlines across 1 steps  (3.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090063/tmp.zv4Hdqw4sW/openmp (2t).h5  (2.0 MB)
+Field:   data/vortex_512x512/field.h5
+Grid:    512 x 512  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (4 thr)  20.5566 ms
+
+Precomputed 3 streamlines across 1 steps  (3.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090063/tmp.zv4Hdqw4sW/openmp (4t).h5  (2.0 MB)
+Field:   data/vortex_512x512/field.h5
+Grid:    512 x 512  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+openmp (8 thr)  22.3343 ms
+
+Precomputed 3 streamlines across 1 steps  (3.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090063/tmp.zv4Hdqw4sW/openmp (8t).h5  (2.0 MB)
+Field:   data/vortex_512x512/field.h5
+Grid:    512 x 512  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+mpi (2 rank(s))  36.6144 ms
+
+Precomputed 3 streamlines across 1 steps  (3.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090063/tmp.zv4Hdqw4sW/mpi (2 ranks).h5  (2.0 MB)
+Field:   data/vortex_512x512/field.h5
+Grid:    512 x 512  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+mpi (4 rank(s))  48.0179 ms
+
+Precomputed 3 streamlines across 1 steps  (3.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090063/tmp.zv4Hdqw4sW/mpi (4 ranks).h5  (2.0 MB)
+Field:   data/vortex_512x512/field.h5
+Grid:    512 x 512  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=128)  336.416 ms
+
+Precomputed 3 streamlines across 1 steps  (3.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090063/tmp.zv4Hdqw4sW/cuda (blk=128).h5  (2.0 MB)
+Field:   data/vortex_512x512/field.h5
+Grid:    512 x 512  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=256)  310.719 ms
+
+Precomputed 3 streamlines across 1 steps  (3.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090063/tmp.zv4Hdqw4sW/cuda (blk=256).h5  (2.0 MB)
+Field:   data/vortex_512x512/field.h5
+Grid:    512 x 512  |  x [-1, 1]  y [-1, 1]
+Steps:   1
+
+cuda (blk=512)  370.997 ms
+
+Precomputed 3 streamlines across 1 steps  (3.0/step avg)
+Streamlines written to /scratch/local/u6074053/9090063/tmp.zv4Hdqw4sW/cuda (blk=512).h5  (2.0 MB)
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_512x512/simulator_stderr.txt ===
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_512x512/simulator_stdout.txt ===
+Config:  configs/vortex_512x512.toml
+Grid:    512 x 512  |  x [-1, 1]  y [-1, 1]
+Steps:   1  (dt=0.01, viscosity=0.03)
+Layers:  vortex(s=1)
+
+Generating... done in 11.4697 ms
+Wrote data/vortex_512x512/field.h5  (2.0 MB)
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_512x512/stderr.log ===
+-------------------------------------------------------------------------------
+The following dependent module(s) are not currently loaded: zlib/1.2.11 (required by: openmpi/5.0.8, hdf5/1.14.6)
+-------------------------------------------------------------------------------
+
+The following have been reloaded with a version change:
+  1) zlib/1.2.11 => zlib/1.2.13
+
+
+=== /uufs/chpc.utah.edu/common/home/u6074053/projects/vector-field-analysis/data/vortex_512x512/stdout.log ===
+=== job info ===
+Sun Apr 19 16:02:59 MDT 2026
+host: lp246
+stem: vortex_512x512
+
+=== simulator ===
+
+=== analyzer ===
+  OK (reference): sequential                         26.103 ms
+  OK (match):     pthreads (2t)                      22.455 ms  (1.16x vs sequential)
+  OK (match):     pthreads (4t)                      20.981 ms  (1.24x vs sequential)
+  OK (match):     pthreads (8t)                      21.204 ms  (1.23x vs sequential)
+  OK (match):     openmp (2t)                        22.182 ms  (1.18x vs sequential)
+  OK (match):     openmp (4t)                        20.557 ms  (1.27x vs sequential)
+  OK (match):     openmp (8t)                        22.334 ms  (1.17x vs sequential)
+  OK (match):     mpi (2 ranks)                      36.614 ms  (0.71x vs sequential)
+  OK (match):     mpi (4 ranks)                      48.018 ms  (0.54x vs sequential)
+  OK (match):     cuda (blk=128)                    336.416 ms  (0.08x vs sequential)
+  OK (match):     cuda (blk=256)                    310.719 ms  (0.08x vs sequential)
+  OK (match):     cuda (blk=512)                    370.997 ms  (0.07x vs sequential)
+
+[u6074053@lonepeak2:vector-field-analysis]$
