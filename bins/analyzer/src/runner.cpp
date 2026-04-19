@@ -10,7 +10,6 @@
 #include <mpi.h>
 #endif
 
-#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <iomanip>
@@ -41,40 +40,7 @@ static RunResult runSolver(StreamlineSolver& solver, const Field::TimeSeries& ti
     return result;
 }
 
-static std::vector<Field::Path> canonicalize(const StreamWriter::StepStreamlines& step) {
-    auto copy = step;
-    std::sort(copy.begin(), copy.end(), [](const auto& lhs, const auto& rhs) {
-        if (lhs.empty() != rhs.empty()) {
-            return rhs.empty();
-        }
-        if (lhs.front() != rhs.front()) {
-            return lhs.front() < rhs.front();
-        }
-        if (lhs.size() != rhs.size()) {
-            return lhs.size() < rhs.size();
-        }
-        return lhs.back() < rhs.back();
-    });
-    return copy;
-}
 
-static void verify(const std::vector<StreamWriter::StepStreamlines>& reference,
-                   const std::vector<StreamWriter::StepStreamlines>& other,
-                   const std::string& name) {
-    if (reference.size() != other.size()) {
-        std::cerr << "Error: " << name << " produced " << other.size()
-                  << " step(s) but sequential produced " << reference.size() << "\n";
-        std::exit(1);
-    }
-
-    for (std::size_t stepIndex = 0; stepIndex < reference.size(); ++stepIndex) {
-        if (canonicalize(reference[stepIndex]) != canonicalize(other[stepIndex])) {
-            std::cerr << "Error: " << name << " streamlines differ from sequential at step "
-                      << stepIndex << "\n";
-            std::exit(1);
-        }
-    }
-}
 
 static void writeAndReport(const std::string& outPath,
                            const std::vector<StreamWriter::StepStreamlines>& streams,
