@@ -66,5 +66,5 @@ run_variant() {
 mkdir -p "$PROJECT_DIR/data/$STEM"
 run_variant "sequential" 1
 for t in 2 4 8; do run_variant "pthreads" "$t"; done
-for t in 2 4 8; do run_variant "openmp"   "$t"; done
-for p in 2 4;   do run_variant "mpi"      "$p"; done
+for t in 2 4 8; do run_variant "openmp" "$t"; done
+for p in 2 4; do run_variant "mpi" "$p"; done

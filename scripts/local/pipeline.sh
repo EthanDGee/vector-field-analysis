@@ -125,10 +125,10 @@ for stem in "${STEMS[@]}"; do
 		fi
 	}
 
-	run_variant "sequential" 1      || ANA_STATUS[$stem]="FAIL"
+	run_variant "sequential" 1 || ANA_STATUS[$stem]="FAIL"
 	for t in 2 4 8; do run_variant "pthreads" "$t" || ANA_STATUS[$stem]="FAIL"; done
-	for t in 2 4 8; do run_variant "openmp"   "$t" || ANA_STATUS[$stem]="FAIL"; done
-	for p in 2 4;   do run_variant "mpi"      "$p" || ANA_STATUS[$stem]="FAIL"; done
+	for t in 2 4 8; do run_variant "openmp" "$t" || ANA_STATUS[$stem]="FAIL"; done
+	for p in 2 4; do run_variant "mpi" "$p" || ANA_STATUS[$stem]="FAIL"; done
 
 	if [[ "${ANA_STATUS[$stem]}" == "FAIL" ]]; then
 		printf "    analyzer   FAIL (one or more variants failed)\n"
