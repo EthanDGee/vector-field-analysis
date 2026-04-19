@@ -213,6 +213,22 @@ run = "find bins libs -name '*.cpp' | xargs clang-tidy -p build --config-file=.c
 description = "Check for spelling errors"
 run = "uvx codespell bins libs docs tools README.md --skip='build,*.h5'"
 
+[tasks."py:lint"]
+description = "Lint Python tools with ruff"
+run = "uvx ruff check tools/"
+
+[tasks."py:format:check"]
+description = "Check Python formatting with ruff"
+run = "uvx ruff format --check tools/"
+
+[tasks."sh:lint"]
+description = "Lint shell scripts with shellcheck"
+run = "find scripts report -name '*.sh' | xargs shellcheck"
+
+[tasks."sh:format:check"]
+description = "Check shell script formatting with shfmt"
+run = "find scripts report -name '*.sh' | xargs shfmt -d"
+
 [tasks.cppcheck]
 description = "Run cppcheck static analysis"
 run = """
@@ -271,6 +287,10 @@ depends = [
   "lint",
   "test:coverage",
   "cppcheck",
+  "py:lint",
+  "py:format:check",
+  "sh:lint",
+  "sh:format:check",
 ]
 
 # =============================================================================
