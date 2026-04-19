@@ -24,6 +24,10 @@ struct Result {
 // reconstructed into Field::Path objects
 Result computeComponents(const std::vector<Vector::Vec2>& field, int rows, int cols,
                          const Field::Bounds& bounds, unsigned int blockSize = 256);
+// computes downstream indices for row range startRow, endRow on gpu 
+std::vector<int> computeSuccessorSlice(const std::vector<Vector::Vec2>& field, int rows, int cols,
+                                       const Field::Bounds& bounds, int startRow, int endRow,
+                                       unsigned int blockSize = 256);
 
 // Reconstructs deterministic host-side paths from the GPU-native result
 std::vector<Field::Path> reconstructPaths(const Result& result);
