@@ -4,7 +4,7 @@
 # Run: simulator configs/karman_street_128x128.toml
 
 [simulation]
-steps = 120
+steps = 1
 dt = 0.05
 viscosity = 0.0
 width = 128

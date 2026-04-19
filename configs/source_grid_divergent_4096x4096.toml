@@ -1,5 +1,5 @@
 [simulation]
-steps     = 200
+steps = 1
 dt        = 0.05
 viscosity = 0.0
 width     = 4096

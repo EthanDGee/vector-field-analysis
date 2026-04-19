@@ -4,7 +4,7 @@
 # Run: simulator configs/vortex_4096x4096.toml
 
 [simulation]
-steps = 50
+steps = 1
 dt = 0.01
 viscosity = 0.03
 width = 4096

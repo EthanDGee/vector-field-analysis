@@ -92,7 +92,8 @@ for stem in "${STEMS[@]}"; do
 	# Analyzer (benchmark -- all variants in one call)
 	printf "    analyzer   benchmarking...\n"
 	ANA_STATUS[$stem]="OK"
-	tmp_toml="$out/${stem}_benchmark.toml"
+	tmp_dir="$(mktemp -d)"
+	tmp_toml="$tmp_dir/${stem}.toml"
 	sed '/^\[analyzer\]/,$d' "$config" >"$tmp_toml"
 	printf '\n[analyzer]\nsolver = "benchmark"\noutput = "%s"\n' "$out/streams.h5" >>"$tmp_toml"
 	if mpirun -n 4 --oversubscribe "$ANALYZER" "$tmp_toml" \
@@ -102,12 +103,12 @@ for stem in "${STEMS[@]}"; do
 	else
 		ANA_STATUS[$stem]="FAIL"
 		printf "    analyzer   FAIL\n"
-		rm -f "$tmp_toml"
+		rm -rf "$tmp_dir"
 		STATS_STATUS[$stem]="SKIP"
 		VIS_STATUS[$stem]="SKIP"
 		continue
 	fi
-	rm -f "$tmp_toml"
+	rm -rf "$tmp_dir"
 
 	# Stats
 	if uv run "$STATS" "$out/field.h5" "$out/streams.h5" \
