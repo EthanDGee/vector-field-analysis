@@ -54,8 +54,7 @@ This advantage was particularly evident at the 4-thread count, where OpenMP's in
 	\end{tabular}
 \end{table}
 
-The GPU performance analysis demonstrates that increasing the block size from 128 to 256 threads provides a substantial performance boost, reducing runtime from 549.
-4 ms to 471.2 ms.
+The GPU performance analysis demonstrates that increasing the block size from 128 to 256 threads provides a substantial performance boost, reducing runtime from 549.4 ms to 471.2 ms.
 This improvement suggests that a block size of 256 better utilizes the GPU's streaming multiprocessors and improves latency hiding.
 Moving to a block size of 512 threads yielded a much smaller improvement, reaching 468.6 ms, indicating that the system is approaching a point of diminishing returns where occupancy is already high enough to saturate the available hardware resources.
 
@@ -108,12 +107,14 @@ Table \ref{tab:perf_summary} provides a high-level comparison of the runtime and
 \end{figure}
 
 While shared-memory implementations like Pthreads and OpenMP provide incremental performance gains through task-level parallelism, they are ultimately limited by the sequential nature of single-node CPU execution for this specific workload.
-While the overall calculations of the neighbor calculation and the union joining of the disjoint sets were able to speed up their respective stages the sequential portions continue to dominate the runtime.
-The merging of the disjoint sets into a singulaor ordered list is inherently sequntial and cannot be avoided.
+While the overall calculations of the neighbor calculation and the union joining of the disjoint sets were able to speed up their respective stages, the sequential portions continue to dominate the runtime.
+The merging of the disjoint sets into a singular ordered list is inherently sequential and cannot be avoided.
 
 
-As observed in the scaling study, the requirement for global synchronization of the Disjoint Set Union (DSU) structure across process boundaries introduces a communication latency is abottle neck that limits the effective ess of the parralel dsu at larger node sizes.
+As observed in the scaling study, the requirement for global synchronization of the Disjoint Set Union (DSU) structure across process boundaries introduces a communication latency that is a bottleneck that limits the effectiveness of the parallel DSU at larger node sizes.
 The overhead of iterative synchronization stages required to reconcile streamline connectivity between sub-grids makes distributed scaling exceptionally difficult.
 
 
+Furthermore the irregular data access continues to be a challengre that leads to a high amount of disk io that cannot be effectively optimized through caching.
+This ids futher complicted by distributed memory implementations where the communcation overhead grows exponentially with each additional node.
 

@@ -14,13 +14,13 @@ This class encapsulates two floating-point components, $x$ and $y$, and essentia
 \end{itemize}
 
 \subsubsection{Field Representation}
-Vector fields are represented store discretely spaced
+Vector fields are represented as discretely spaced vectors stored within a grid structure.
 
 The primary data structures are:
 \begin{itemize}
 	\item \texttt{FieldSlice}: A 2D grid of discretely spaced vectors.
-	\item \texttt{FieldTimeSeries}: A  collection of field slices that have associated x and y bound associated with physical-space bounds ($x_{\text{min}}, x_{\text{max}}, y_{\text{min}}, y_{\text{max}}$).
-	\item \texttt{FieldGrid}: serves as the high-level manager for a single time-step's vector field. Handling all the necessary calcualtions for streamline computations.
+	\item \texttt{FieldTimeSeries}: A collection of field slices associated with physical-space bounds ($x_{\text{min}}, x_{\text{max}}, y_{\text{min}}, y_{\text{max}}$).
+	\item \texttt{FieldGrid}: Serves as the high-level manager for a single time-step's vector field, handling all the necessary calculations for streamline computations.
 \end{itemize}
 
 The \texttt{FieldReader} component handles the deserialization of these fields from HDF5 files using the HighFive library.
@@ -40,11 +40,11 @@ Unlike continuous integration methods, this approach treats the grid cells as di
 
 \subsubsection{Discretized Neighbor Calculation}
 For each cell $(i, j)$, the algorithm computes the target neighbor by first determining the physical spacing between grid cells based on the field boundaries and grid dimensions.
-It then advances the cell's physical position by the vector's $(x, y)$ components, and converting back to grid indices using it's knowledge of grid spacing.
+It then advances the cell's physical position by the vector's $(x, y)$ components and converting back to grid indices using its knowledge of grid spacing.
 
 \subsubsection{One-Step Forward Trace and Merging}
 The algorithm maintains a parallel grid where each cell points to the streamline it currently belongs to (initially null).
-Each grid cell is processed only once. For each cell, it considers a single step using it's discretized neighbor calculation.
+Each grid cell is processed only once. For each cell, it considers a single step using its discretized neighbor calculation.
 When processing a cell:
 \begin{itemize}
 	\item \textbf{Path Extension:} If the source cell has no streamline, a new streamline is created starting at that cell. If the neighboring cell is unclaimed, it is assigned to the source's streamline, and its coordinates are appended to the streamline's path.
@@ -73,14 +73,14 @@ To address this, both shared-memory implementations employ a two-pass strategy:
 \end{enumerate}
 
 \subsubsection{POSIX Threads (Pthreads)}
-The grid is partitioned into cunks where each thread is assigned a contiguous range of rows.
+The grid is partitioned into chunks where each thread is assigned a contiguous range of rows.
 This minimizes the overhead of thread management while ensuring that each thread operates on a disjoint memory region in the neighbor buffer.
 The implementation explicitly manages thread creation and joining, handling potential errors and ensuring that all threads terminate before proceeding to the sequential pass.
 
 \subsubsection{OpenMP}
 The OpenMP implementation (\texttt{openMP}) utilizes compiler directives to abstract the underlying thread management, adhering to the OpenMP 5.
 0 application program interface \cite{openmp50}.
-We employ \texttt{\#pragma omp parallel for} directive with a \texttt{collapse(2)} clause to allow for easy segmenatation and load balancing across our nested loops.
+We employ \texttt{\#pragma omp parallel for} directive with a \texttt{collapse(2)} clause to allow for easy segmentation and load balancing across our nested loops.
 
 \subsection{Massively Parallel GPU Acceleration with CUDA}
 
