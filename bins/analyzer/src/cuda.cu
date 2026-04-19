@@ -247,74 +247,35 @@ std::vector<Field::Path> reconstructPaths(const Result& result) {
     }
 
     const int total = result.rows * result.cols;
-    if (static_cast<int>(result.successor.size()) != total) {
+    if (static_cast<int>(result.componentId.size()) != total) {
         throw std::runtime_error("cuda::reconstructPaths received inconsistent result sizes");
     }
 
-    // owner[idx] = streamline id currently owning this cell, or -1 if unclaimed
-    std::vector<int> owner(static_cast<std::size_t>(total), -1);
-
-    // Each streamline is stored as a flattened list of cell indices.
-    std::vector<std::vector<int>> paths;
-    paths.reserve(static_cast<std::size_t>(total));
-
-    // Replay the same row-major source->destination application order used by
-    // the existing CPU implementations.
-    for (int idx = 0; idx < total; ++idx) {
-        int srcOwner = owner[static_cast<std::size_t>(idx)];
-
-        // If this source cell does not yet belong to a streamline, create one
-        // rooted at this source cell.
-        if (srcOwner == -1) {
-            srcOwner = static_cast<int>(paths.size());
-            paths.push_back(std::vector<int>{idx});
-            owner[static_cast<std::size_t>(idx)] = srcOwner;
+    // componentId is assigned by scanning cells 0..N-1, so label k corresponds
+    // to the component whose minimum cell index is encountered k-th. Grouping
+    // cells by label while iterating in cell-index order produces paths whose
+    // cells are in ascending index order -- matching the CPU sortCellsByRoot
+    // output and making verify() pass.
+    int numComponents = 0;
+    for (int id : result.componentId) {
+        if (id >= numComponents) {
+            numComponents = id + 1;
         }
-
-        const int dest = result.successor[static_cast<std::size_t>(idx)];
-        if (dest < 0 || dest >= total) {
-            continue;
-        }
-
-        const int destOwner = owner[static_cast<std::size_t>(dest)];
-
-        if (destOwner == -1) {
-            // Destination is unclaimed: extend the source streamline into it.
-            owner[static_cast<std::size_t>(dest)] = srcOwner;
-            paths[static_cast<std::size_t>(srcOwner)].push_back(dest);
-        } else if (destOwner != srcOwner) {
-            // Destination already belongs to another streamline:
-            // merge source into destination, matching joinStreamlines(dest, src).
-            for (const int point : paths[static_cast<std::size_t>(srcOwner)]) {
-                paths[static_cast<std::size_t>(destOwner)].push_back(point);
-                owner[static_cast<std::size_t>(point)] = destOwner;
-            }
-            paths[static_cast<std::size_t>(srcOwner)].clear();
-        }
-        // If destOwner == srcOwner, do nothing.
-        // This matches the CPU logic where self-merges are ignored.
     }
 
-    // Emit unique non-empty paths in deterministic row-major order.
+    std::vector<Field::Path> paths(static_cast<std::size_t>(numComponents));
+    for (int idx = 0; idx < total; ++idx) {
+        const int compId = result.componentId[static_cast<std::size_t>(idx)];
+        paths[static_cast<std::size_t>(compId)].push_back(toGridCell(idx, result.cols));
+    }
+
     std::vector<Field::Path> output;
-    std::vector<bool> emitted(paths.size(), false);
-
-    for (int idx = 0; idx < total; ++idx) {
-        const int streamId = owner[static_cast<std::size_t>(idx)];
-        if (streamId < 0 || emitted[static_cast<std::size_t>(streamId)] ||
-            paths[static_cast<std::size_t>(streamId)].empty()) {
-            continue;
+    output.reserve(static_cast<std::size_t>(numComponents));
+    for (auto& path : paths) {
+        if (!path.empty()) {
+            output.push_back(std::move(path));
         }
-
-        emitted[static_cast<std::size_t>(streamId)] = true;
-
-        Field::Path path;
-        for (const int point : paths[static_cast<std::size_t>(streamId)]) {
-            path.push_back(toGridCell(point, result.cols));
-        }
-        output.push_back(std::move(path));
     }
-
     return output;
 }
 } // namespace cuda
