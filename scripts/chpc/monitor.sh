@@ -12,6 +12,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 LOG_DIR="$PROJECT_DIR/logs"
 CONFIGS_DIR="$PROJECT_DIR/configs"
+# shellcheck source=/dev/null
 [[ -f "$PROJECT_DIR/.env" ]] && source "$PROJECT_DIR/.env"
 JOB_NAME="${JOB_NAME:-vfa}"
 

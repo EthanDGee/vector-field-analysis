@@ -10,6 +10,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck source=/dev/null
 [[ -f "$PROJECT_DIR/.env" ]] && source "$PROJECT_DIR/.env"
 
 JOB_NAME="${JOB_NAME:-vfa}"
