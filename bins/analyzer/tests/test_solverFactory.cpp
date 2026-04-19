@@ -6,6 +6,7 @@
 
 #ifdef ENABLE_CUDA_SOLVER
 #include "cudaStreamlineSolver.hpp"
+#include "hybridCudaMpiStreamlineSolver.hpp"
 #endif
 
 #include <catch2/catch_test_macros.hpp>
@@ -44,6 +45,12 @@ TEST_CASE("makeSolver(\"cuda\") returns CudaStreamlineSolver", "[factory]") {
     auto solver = makeSolver("cuda", 0, 256);
     REQUIRE(solver != nullptr);
     REQUIRE(dynamic_cast<CudaStreamlineSolver*>(solver.get()) != nullptr);
+}
+
+TEST_CASE("makeSolver(\"hybrid\") returns HybridCudaMpiStreamlineSolver", "[factory]") {
+    auto solver = makeSolver("hybrid", 0, 256);
+    REQUIRE(solver != nullptr);
+    REQUIRE(dynamic_cast<HybridCudaMpiStreamlineSolver*>(solver.get()) != nullptr);
 }
 #endif
 

@@ -18,6 +18,7 @@
 #include <iostream>
 #include <numeric>
 #include <string>
+#include <utility>
 #include <vector>
 
 struct RunResult {
@@ -27,12 +28,14 @@ struct RunResult {
 
 static RunResult runSolver(StreamlineSolver& solver, const Field::TimeSeries& timeSeries) {
     RunResult result;
-    auto startTime = std::chrono::steady_clock::now();
+    const auto startTime = std::chrono::steady_clock::now();
+
     for (const auto& frame : timeSeries.frames) {
         Field::Grid grid(timeSeries.bounds, frame);
         solver.computeTimeStep(grid);
         result.streams.push_back(grid.getStreamlines());
     }
+
     result.elapsedMilliseconds =
         std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startTime)
             .count();
@@ -60,10 +63,11 @@ static void verify(const std::vector<StreamWriter::StepStreamlines>& reference,
                    const std::vector<StreamWriter::StepStreamlines>& other,
                    const std::string& name) {
     if (reference.size() != other.size()) {
-        std::cerr << "Error: " << name << " produced " << other.size() << " step(s) but sequential"
-                  << " produced " << reference.size() << "\n";
+        std::cerr << "Error: " << name << " produced " << other.size()
+                  << " step(s) but sequential produced " << reference.size() << "\n";
         std::exit(1);
     }
+
     for (std::size_t stepIndex = 0; stepIndex < reference.size(); ++stepIndex) {
         if (canonicalize(reference[stepIndex]) != canonicalize(other[stepIndex])) {
             std::cerr << "Error: " << name << " streamlines differ from sequential at step "
@@ -79,9 +83,11 @@ static void writeAndReport(const std::string& outPath,
     const std::size_t total =
         std::accumulate(streams.begin(), streams.end(), std::size_t{0},
                         [](std::size_t acc, const auto& step) { return acc + step.size(); });
+
     const std::size_t numSteps = streams.size();
     const double avgPerStep =
         numSteps > 0 ? static_cast<double>(total) / static_cast<double>(numSteps) : 0.0;
+
     std::cout << "\nPrecomputed " << total << " streamlines across " << numSteps << " steps"
               << "  (" << std::fixed << std::setprecision(1) << avgPerStep << "/step avg)\n";
 
@@ -97,10 +103,10 @@ static void writeAndReport(const std::string& outPath,
 }
 
 void runBenchmark(const Field::TimeSeries& field, const std::vector<unsigned int>& benchmarkThreads,
-                  [[maybe_unused]] const std::vector<unsigned int>& benchmarkCudaBlockSizes,
-                  int mpiRank, int mpiSize, const std::string& outPath) {
-    // Compute label width upfront for aligned output.
+                  const std::vector<unsigned int>& benchmarkCudaBlockSizes, int mpiRank,
+                  int mpiSize, const std::string& outPath) {
     std::vector<std::size_t> labelSizes = {std::string("sequential (1t)").size()};
+
     for (unsigned int t : benchmarkThreads) {
         const std::string ts = std::to_string(t);
         labelSizes.push_back(std::string("pthreads (" + ts + "t)").size());
@@ -108,20 +114,32 @@ void runBenchmark(const Field::TimeSeries& field, const std::vector<unsigned int
         labelSizes.push_back(std::string("openmp (" + ts + "t)").size());
 #endif
     }
+
 #ifdef USE_MPI
     if (mpiSize > 1) {
         labelSizes.push_back(std::string("mpi (" + std::to_string(mpiSize) + " ranks)").size());
     }
 #endif
+
 #ifdef ENABLE_CUDA_SOLVER
     for (unsigned int blk : benchmarkCudaBlockSizes) {
         labelSizes.push_back(std::string("cuda (blk=" + std::to_string(blk) + ")").size());
     }
+#ifdef USE_MPI
+    if (mpiSize > 1) {
+        for (unsigned int blk : benchmarkCudaBlockSizes) {
+            labelSizes.push_back(
+                std::string("hybrid (" + std::to_string(mpiSize) + " ranks, blk=" +
+                            std::to_string(blk) + ")")
+                    .size());
+        }
+    }
 #endif
+#endif
+
     const int labelWidth =
         static_cast<int>(*std::max_element(labelSizes.begin(), labelSizes.end())) + 2;
 
-    // MPI must run first -- all ranks must participate before rank 0 diverges.
     RunResult mpiResult{};
 #ifdef USE_MPI
     if (mpiSize > 1) {
@@ -130,20 +148,32 @@ void runBenchmark(const Field::TimeSeries& field, const std::vector<unsigned int
     }
 #endif
 
+#ifdef ENABLE_CUDA_SOLVER
+    std::vector<std::pair<unsigned int, RunResult>> hybridResults;
+#ifdef USE_MPI
+    if (mpiSize > 1) {
+        hybridResults.reserve(benchmarkCudaBlockSizes.size());
+        for (unsigned int blk : benchmarkCudaBlockSizes) {
+            auto hybridSolver = makeSolver("hybrid", static_cast<unsigned int>(mpiSize), blk);
+            hybridResults.emplace_back(blk, runSolver(*hybridSolver, field));
+        }
+    }
+#endif
+#endif
+
     if (mpiRank != 0) {
         return;
     }
 
-    // Sequential is the reference for all verifications.
     RunResult seqResult;
     {
         auto seq = makeSolver("sequential", 1);
         seqResult = runSolver(*seq, field);
     }
+
     std::cout << std::left << std::setw(labelWidth) << "sequential (1t)"
               << seqResult.elapsedMilliseconds << " ms\n";
 
-    // Verify and print MPI now that we have the sequential reference.
 #ifdef USE_MPI
     if (mpiSize > 1) {
         verify(seqResult.streams, mpiResult.streams, "mpi (" + std::to_string(mpiSize) + " ranks)");
@@ -182,6 +212,22 @@ void runBenchmark(const Field::TimeSeries& field, const std::vector<unsigned int
         printTiming("cuda (blk=" + std::to_string(blk) + ")", result.elapsedMilliseconds,
                     labelWidth, seqResult.elapsedMilliseconds);
     }
+#ifdef USE_MPI
+    if (mpiSize > 1) {
+        for (auto& hybridEntry : hybridResults) {
+            const unsigned int blk = hybridEntry.first;
+            auto& result = hybridEntry.second;
+            verify(seqResult.streams, result.streams,
+                   "hybrid (" + std::to_string(mpiSize) + " ranks, blk=" + std::to_string(blk) +
+                       ")");
+            printTiming("hybrid (" + std::to_string(mpiSize) + " ranks, blk=" +
+                            std::to_string(blk) + ")",
+                        result.elapsedMilliseconds, labelWidth, seqResult.elapsedMilliseconds);
+            result.streams.clear();
+            result.streams.shrink_to_fit();
+        }
+    }
+#endif
 #endif
 
     std::cout << "[all verified vs sequential]\n";
@@ -192,9 +238,21 @@ void runOne(const std::string& solverName, const Field::TimeSeries& field, unsig
             [[maybe_unused]] unsigned int cudaBlockSize, int mpiRank, int mpiSize,
             const std::string& outPath) {
     RunResult result{};
+
     if (solverName == "mpi") {
         auto solver = makeSolver(solverName, threadCount);
         result = runSolver(*solver, field);
+    } else if (solverName == "hybrid") {
+#ifdef ENABLE_CUDA_SOLVER
+        auto solver = makeSolver(solverName, threadCount, cudaBlockSize);
+        result = runSolver(*solver, field);
+#else
+        if (mpiRank == 0) {
+            std::cerr << "Error: solver \"" << solverName
+                      << "\" requires rebuilding with -DENABLE_CUDA=ON\n";
+        }
+        return;
+#endif
     } else if (mpiRank == 0) {
 #ifdef ENABLE_CUDA_SOLVER
         if (solverName == "cuda") {
@@ -230,10 +288,13 @@ void runOne(const std::string& solverName, const Field::TimeSeries& field, unsig
 #ifdef ENABLE_CUDA_SOLVER
         } else if (solverName == "cuda") {
             label += " (blk=" + std::to_string(cudaBlockSize) + ")";
+        } else if (solverName == "hybrid") {
+            label += " (" + std::to_string(mpiSize) + " rank(s), blk=" +
+                     std::to_string(cudaBlockSize) + ")";
 #endif
         }
-        std::cout << label << "  " << result.elapsedMilliseconds << " ms\n";
 
+        std::cout << label << "  " << result.elapsedMilliseconds << " ms\n";
         writeAndReport(outPath, result.streams, field.bounds, field.gridSize());
     }
 }
