@@ -105,5 +105,12 @@ Once all ranks have converged to a consistent global state, path reconstruction 
 
 \subsection{Distributed-Memory GPU Implementation (Hybrid)}
 
+This hybrid approach leverages the high throughput of GPU acceleration while maintaining the horizontal scalar ability ability of distributed-memory clusters, effectively shifting the computational bottleneck from local tracing to global network communication.
+This approach essentially offloads the local computation of each MPI rank to a dedicated GPU, merging the multi-pass architecture of our CUDA implementation with the domain-decomposition strategy of our MPI solver.
+
+By assigning each rank to a specific local GPU and a corresponding sub-grid of the vector field, the system achieves significant acceleration in the initial subsequent vector calculation phase.
+Global connectivity is then resolved using the same iterative reconciliation strategy employed in the distributed CPU version, ensuring that streamlines crossing node boundaries are correctly identified and merged.
+This hybrid approach leverages the high throughput of GPU acceleration while maintaining the horizontal scalability of distributed-memory clusters, effectively shifting the computational bottleneck from local tracing to global network communication.
+
 \subsection{Experimental Design}
 This section outlines the setup and procedures for the scaling studies and performance evaluations conducted across different architectures.
