@@ -27,44 +27,34 @@ __device__ int findRoot(int* parent, int x) {
     return x;
 }
 
-// Union-find union using atomicCAS
-__device__ void unite(int* parent, int* rank, int a, int b) {
+// Union-find union using atomicCAS — MIN-root: smaller index always becomes root,
+// matching Grid::unite so all solvers use the same DSU convention.
+__device__ void unite(int* parent, int a, int b) {
     while (true) {
         a = findRoot(parent, a);
         b = findRoot(parent, b);
-
-        if (a == b) {
-            return;
-        }
-
-        if (rank[a] < rank[b]) {
+        if (a == b) return;
+        if (a > b) {
             const int tmp = a;
             a = b;
             b = tmp;
         }
-
         const int old = atomicCAS(&parent[b], b, a);
-        if (old == b) {
-            if (rank[a] == rank[b]) {
-                atomicAdd(&rank[a], 1);
-            }
-            return;
-        }
+        if (old == b) return;
     }
 }
 
-__global__ void initUnionFindKernel(int n, int* parent, int* rank) {
+__global__ void initUnionFindKernel(int n, int* parent) {
     const int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < n) {
         parent[idx] = idx;
-        rank[idx] = 0;
     }
 }
 
-__global__ void unionSuccessorKernel(int n, const int* successor, int* parent, int* rank) {
+__global__ void unionSuccessorKernel(int n, const int* successor, int* parent) {
     const int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < n) {
-        unite(parent, rank, idx, successor[idx]);
+        unite(parent, idx, successor[idx]);
     }
 }
 
@@ -87,7 +77,6 @@ Result computeComponents(const std::vector<int>& successor, int rows, int cols,
 
     int* dSuccessor = nullptr;
     int* dParent = nullptr;
-    int* dRank = nullptr;
 
     const auto cleanup = [&]() {
         if (dSuccessor != nullptr) {
@@ -97,10 +86,6 @@ Result computeComponents(const std::vector<int>& successor, int rows, int cols,
         if (dParent != nullptr) {
             cudaFree(dParent);
             dParent = nullptr;
-        }
-        if (dRank != nullptr) {
-            cudaFree(dRank);
-            dRank = nullptr;
         }
     };
 
@@ -113,10 +98,6 @@ Result computeComponents(const std::vector<int>& successor, int rows, int cols,
                              sizeof(int) * static_cast<std::size_t>(total)),
                   "cudaMalloc(dParent)");
 
-        cudaCheck(cudaMalloc(reinterpret_cast<void**>(&dRank),
-                             sizeof(int) * static_cast<std::size_t>(total)),
-                  "cudaMalloc(dRank)");
-
         // Upload CPU-computed successor so the union-find uses the same
         // downstream cells as Grid::downstreamCell (avoids GPU FMA divergence).
         cudaCheck(cudaMemcpy(dSuccessor, successor.data(),
@@ -127,10 +108,10 @@ Result computeComponents(const std::vector<int>& successor, int rows, int cols,
         const int blockSize = static_cast<int>(cudaBlockSize);
         const int launchSize = (total + blockSize - 1) / blockSize;
 
-        initUnionFindKernel<<<launchSize, blockSize>>>(total, dParent, dRank);
+        initUnionFindKernel<<<launchSize, blockSize>>>(total, dParent);
         cudaCheck(cudaGetLastError(), "initUnionFindKernel launch");
 
-        unionSuccessorKernel<<<launchSize, blockSize>>>(total, dSuccessor, dParent, dRank);
+        unionSuccessorKernel<<<launchSize, blockSize>>>(total, dSuccessor, dParent);
         cudaCheck(cudaGetLastError(), "unionSuccessorKernel launch");
 
         compressParentsKernel<<<launchSize, blockSize>>>(total, dParent);
