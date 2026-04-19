@@ -1,12 +1,92 @@
 \section{Methodology}
 
-This section should describe the methods, techniques, and procedures used to conduct the research. It should be detailed enough to allow replication of the work.
+This section describes the methods, techniques, and procedures used to conduct the research and implement the various versions of the vector field analyzer.
 
-Subsections may include:
+\subsection{Core Components}
+
+
+\subsubsection{Vector Representation}
+At the most fundamental level, the system utilizes a \texttt{Vec2} class to represent 2D vectors.
+This class encapsulates two floating-point components, $x$ and $y$, and essential mathematical operations:
 \begin{itemize}
-	\item System architecture or experimental setup
-	\item Algorithms or mathematical formulations
-	\item Data collection or generation methods
-	\item Implementation details
-	\item Performance evaluation metrics
+	\item \textbf{Vector Arithmetic:} Standard operations for vector addition and scalar multiplication.
+	\item \textbf{Normalization:} Methods to calculate the magnitude and derive unit vectors to allow for easy directional comparison.
 \end{itemize}
+
+\subsubsection{Field Representation}
+Vector fields are represented store discretely spaced
+
+The primary data structures are:
+\begin{itemize}
+	\item \texttt{FieldSlice}: A 2D grid of discretely spaced vectors.
+	\item \texttt{FieldTimeSeries}: A  collection of field slices that have associated x and y bound associated with physical-space bounds ($x_{\text{min}}, x_{\text{max}}, y_{\text{min}}, y_{\text{max}}$).
+	\item \texttt{FieldGrid}: serves as the high-level manager for a single time-step's vector field. Handling all the necessary calcualtions for streamline computations.
+\end{itemize}
+
+The \texttt{FieldReader} component handles the deserialization of these fields from HDF5 files using the HighFive library.
+It extracts \texttt{vx} and \texttt{vy} datasets into the internal grid representation, ensuring that physical dimensions and time-series data are correctly mapped to the discrete grid indices.
+
+\subsubsection{Grid Management and Streamline Tracing}
+
+Each \texttt{Streamline} object stores an ordered list of grid coordinates (\texttt{row, col}) that constitutes a path.
+This decouples the mathematical vector data from the state of the streamline tracing algorithm by maintaining a corresponding grid of \texttt{Streamline} pointers.
+This abstraction allows the tracing logic to handle merging and path extension while keeping the underlying vector field read-only, which is critical for thread safety in parallel implementations.
+
+\subsection{Streamline Tracing Algorithm}
+
+The core logic for analyzing vector fields involves a discretized streamline tracing algorithm that maps continuous vector directions onto the underlying computational grid.
+Unlike continuous integration methods, this approach treats the grid cells as discrete nodes in a directed graph where edges are defined by the local vector field.
+
+
+\subsubsection{Discretized Neighbor Calculation}
+For each cell $(i, j)$, the algorithm computes the target neighbor by first determining the physical spacing between grid cells based on the field boundaries and grid dimensions.
+It then advances the cell's physical position by the vector's $(x, y)$ components, and converting back to grid indices using it's knowledge of grid spacing.
+
+\subsubsection{One-Step Forward Trace and Merging}
+The algorithm maintains a parallel grid where each cell points to the streamline it currently belongs to (initially null).
+Each grid cell is processed only once. For each cell, it considers a single step using it's discretized neighbor calculation.
+When processing a cell:
+\begin{itemize}
+	\item \textbf{Path Extension:} If the source cell has no streamline, a new streamline is created starting at that cell. If the neighboring cell is unclaimed, it is assigned to the source's streamline, and its coordinates are appended to the streamline's path.
+	\item \textbf{Path Merging:} If the neighboring cell already belongs to a streamline, the source cell's streamline (if any) is merged into the neighbor's streamline, and the grid is updated so that every point in the source streamline now points to the neighbor's streamline. This represents a convergence in the flow.
+\end{itemize}
+
+After processing all cells, each grid cell belongs to exactly one streamline. The algorithm naturally handles termination: when a vector points to the same cell (after clamping), no extension or merge occurs for that cell, resulting in a streamline of length one. Similarly, boundary effects are handled by the clamping step in the neighbor calculation.
+
+By maintaining this parallel grid of streamline references and processing each cell once, the algorithm efficiently maps the entire topology of the field in a deterministic manner.
+
+\subsection{Serial CPU Implementation}
+The baseline implementation, \texttt{sequentialCPU}, serves as a reference for both correctness and performance metrics.
+It is implemented using modern C++17 standards \cite{cpp17} and processes the vector field grid in a single pass using nested loops to iterate through rows and columns in row-major order.
+For each cell $(i, j)$, the implementation invokes the \texttt{traceStreamlineStep} method, which calculates the target neighbor and updates the streamline grid.
+
+\subsection{Shared-Memory Parallelism CPU Implementation}
+To leverage multi-core architectures, we developed parallel implementations using POSIX Threads and OpenMP.
+A significant challenge in parallelizing the streamline tracing algorithm is the stateful nature of the streamline grid; multiple threads writing to or merging streamlines could result in race conditions.
+To address this, both shared-memory implementations employ a two-pass strategy:
+\begin{enumerate}
+	\item \textbf{Parallel Neighbor Precomputation:} The algorithm first calculates the destination neighbor for every cell in the grid.
+	      Since this step only reads from the vector field and writes to an independent intermediate buffer, it is perfectly parallelizable.
+	\item \textbf{Sequential Streamline Merging:} The precomputed neighbors are then used to perform the actual streamline tracing and merging.
+	      This pass remains sequential to ensure the integrity of the streamline data structures.
+
+\end{enumerate}
+
+\subsubsection{POSIX Threads (Pthreads)}
+The grid is partitioned into cunks where each thread is assigned a contiguous range of rows.
+This minimizes the overhead of thread management while ensuring that each thread operates on a disjoint memory region in the neighbor buffer.
+The implementation explicitly manages thread creation and joining, handling potential errors and ensuring that all threads terminate before proceeding to the sequential pass.
+
+\subsubsection{OpenMP}
+The OpenMP implementation (\texttt{openMP}) utilizes compiler directives to abstract the underlying thread management, adhering to the OpenMP 5.
+0 application program interface \cite{openmp50}.
+We employ \texttt{\#pragma omp parallel for} directive with a \texttt{collapse(2)} clause to allow for easy segmenatation and load balancing across our nested loops.
+
+\subsection{Massively Parallel GPU Acceleration with CUDA}
+
+\subsection{Distributed-Memory CPU Implementation}
+
+\subsection{Distributed-Memory GPU Implementation (Hybrid)}
+
+\subsection{Experimental Design}
+This section outlines the setup and procedures for the scaling studies and performance evaluations conducted across different architectures.

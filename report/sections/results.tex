@@ -1,12 +1,84 @@
 \section{Results}
 
-This section should present the findings of the research in a clear and logical manner. Use figures, tables, and graphs to illustrate the results effectively.
+This section presents the findings of our comparative performance analysis across the various parallel implementations.
 
-Guidelines:
-\begin{itemize}
-	\item Present results objectively without interpretation
-	\item Use figures and tables with descriptive captions
-	\item Reference all figures and tables in the text
-	\item Include statistical analysis if applicable
-	\item Compare results with existing methods when appropriate
-\end{itemize}
+\subsection{Shared-Memory Threading Comparison}
+
+This study compares the performance of POSIX threads (Pthreads) against OpenMP across varying thread counts to evaluate threading overhead and efficiency.
+
+\begin{table}[htbp]
+	\centering
+	\caption{Threading Performance: Pthreads vs. OpenMP}
+	\label{tab:threading_comparison}
+	\begin{tabular}{|l|c|c|}
+		\hline
+		\textbf{\# Threads} & \textbf{POSIX Threads Runtime (ms)} & \textbf{OpenMP Runtime (ms)} \\ \hline
+		1 (Serial)          &                                     &                              \\ \hline
+		2                   &                                     &                              \\ \hline
+		4                   &                                     &                              \\ \hline
+		8                   &                                     &                              \\ \hline
+		16                  &                                     &                              \\ \hline
+	\end{tabular}
+\end{table}
+
+Analysis
+
+\subsection{GPU Block Size Analysis}
+
+\begin{table}[htbp]
+	\centering
+	\caption{GPU Performance vs. Block Size}
+	\label{tab:gpu_block_size}
+	\begin{tabular}{|l|r|r|}
+		\hline
+		\textbf{Block Size} & \textbf{Runtime (s)} & \textbf{Speedup} \\ \hline
+		$16 \times 16$      &                      &                  \\ \hline
+		$32 \times 32$      &                      &                  \\ \hline
+		$64 \times 64$      &                      &                  \\ \hline
+	\end{tabular}
+\end{table}
+
+
+Analysis
+
+
+\subsection{Distributed CPU vs. Distributed GPU Scaling Study}
+
+
+\begin{table}[htbp]
+	\centering
+	\caption{Distributed Scaling Comparison (2--4 Nodes)}
+	\label{tab:distributed_scaling}
+	\begin{tabular}{|l|c|c|}
+		\hline
+		\textbf{Nodes} & \textbf{Distributed CPU Runtime (s)} & \textbf{Distributed GPU Runtime (s)} \\ \hline
+		2 Nodes        &                                      &                                      \\ \hline
+		4 Nodes        &                                      &                                      \\ \hline
+	\end{tabular}
+\end{table}
+
+
+Analysis
+\subsection{Performance Comparison Overview}
+
+Table \ref{tab:perf_summary} provides a high-level comparison of the runtime and speedup for each implementation type.
+
+\begin{table}[htbp]
+	\centering
+	\caption{Overall Performance Comparison}
+	\label{tab:perf_summary}
+	\begin{tabular}{|l|r|r|}
+		\hline
+		\textbf{Technology} & \textbf{Runtime (ms)} & \textbf{Speedup} \\ \hline
+		Serial              &                       & 1.0              \\ \hline
+		Pthreads            &                       &                  \\ \hline
+		OpenMP              &                       &                  \\ \hline
+		OpenMPI             &                       &                  \\ \hline
+		CUDA                &                       &                  \\ \hline
+		Hybrid (MPI+CUDA)   &                       &                  \\ \hline
+	\end{tabular}
+\end{table}
+
+
+Analysis
+
