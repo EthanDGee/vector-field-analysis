@@ -18,6 +18,30 @@ inline void cudaCheck(cudaError_t err, const char* what) {
     }
 }
 
+// Mirrors Grid::downstreamCell using the same simplified index-space formula:
+// destRow = round(row + vy/rowSpacing). Division-only; no FMA possible, so
+// GPU result is bitwise identical to CPU.
+__global__ void computeSuccessorKernel(const float2* field, int rows, int cols,
+                                       float rowSpacing, float colSpacing, int* successor) {
+    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= rows * cols) {
+        return;
+    }
+
+    const int row = idx / cols;
+    const int col = idx % cols;
+
+    if (rows == 1 || cols == 1) {
+        successor[idx] = idx;
+        return;
+    }
+
+    const float2 v = field[idx];
+    const int destRow = max(0, min(rows - 1, static_cast<int>(roundf(static_cast<float>(row) + (v.y / rowSpacing)))));
+    const int destCol = max(0, min(cols - 1, static_cast<int>(roundf(static_cast<float>(col) + (v.x / colSpacing)))));
+    successor[idx] = destRow * cols + destCol;
+}
+
 // Union-find find + path halving
 __device__ int findRoot(int* parent, int x) {
     while (parent[x] != x) {
@@ -67,18 +91,29 @@ __global__ void compressParentsKernel(int n, int* parent) {
 
 } // namespace
 
-Result computeComponents(const std::vector<int>& successor, int rows, int cols,
-                         unsigned int cudaBlockSize) {
+Result computeComponents(const std::vector<Vector::Vec2>& field, int rows, int cols,
+                         float rowSpacing, float colSpacing, unsigned int cudaBlockSize) {
     if (rows == 0 || cols == 0) {
         return {};
     }
 
     const int total = rows * cols;
 
+    std::vector<float2> hostField(static_cast<std::size_t>(total));
+    for (int i = 0; i < total; ++i) {
+        const auto& v = field[static_cast<std::size_t>(i)];
+        hostField[static_cast<std::size_t>(i)] = float2{v.x, v.y};
+    }
+
+    float2* dField = nullptr;
     int* dSuccessor = nullptr;
     int* dParent = nullptr;
 
     const auto cleanup = [&]() {
+        if (dField != nullptr) {
+            cudaFree(dField);
+            dField = nullptr;
+        }
         if (dSuccessor != nullptr) {
             cudaFree(dSuccessor);
             dSuccessor = nullptr;
@@ -90,6 +125,10 @@ Result computeComponents(const std::vector<int>& successor, int rows, int cols,
     };
 
     try {
+        cudaCheck(cudaMalloc(reinterpret_cast<void**>(&dField),
+                             sizeof(float2) * static_cast<std::size_t>(total)),
+                  "cudaMalloc(dField)");
+
         cudaCheck(cudaMalloc(reinterpret_cast<void**>(&dSuccessor),
                              sizeof(int) * static_cast<std::size_t>(total)),
                   "cudaMalloc(dSuccessor)");
@@ -98,15 +137,17 @@ Result computeComponents(const std::vector<int>& successor, int rows, int cols,
                              sizeof(int) * static_cast<std::size_t>(total)),
                   "cudaMalloc(dParent)");
 
-        // Upload CPU-computed successor so the union-find uses the same
-        // downstream cells as Grid::downstreamCell (avoids GPU FMA divergence).
-        cudaCheck(cudaMemcpy(dSuccessor, successor.data(),
-                             sizeof(int) * static_cast<std::size_t>(total),
+        cudaCheck(cudaMemcpy(dField, hostField.data(),
+                             sizeof(float2) * static_cast<std::size_t>(total),
                              cudaMemcpyHostToDevice),
-                  "cudaMemcpy H2D successor");
+                  "cudaMemcpy H2D field");
 
         const int blockSize = static_cast<int>(cudaBlockSize);
         const int launchSize = (total + blockSize - 1) / blockSize;
+
+        computeSuccessorKernel<<<launchSize, blockSize>>>(dField, rows, cols, rowSpacing, colSpacing,
+                                                         dSuccessor);
+        cudaCheck(cudaGetLastError(), "computeSuccessorKernel launch");
 
         initUnionFindKernel<<<launchSize, blockSize>>>(total, dParent);
         cudaCheck(cudaGetLastError(), "initUnionFindKernel launch");

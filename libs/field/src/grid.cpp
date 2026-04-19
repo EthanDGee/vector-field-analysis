@@ -96,14 +96,15 @@ GridCell Grid::downstreamCell(int row, int col) const {
     // Advance one step in the vector direction, then snap to the nearest grid
     // index. Clamped to valid index bounds so boundary vectors don't reference
     // off-grid cells.
-    const float physRow = indexToCoord(row, rowCount, bounds_.yMin, bounds_.yMax);
-    const float physCol = indexToCoord(col, colCount, bounds_.xMin, bounds_.xMax);
-    const int nearestRow =
-        std::clamp(static_cast<int>(std::round((physRow + start.y - bounds_.yMin) / rowSpacing_)),
-                   0, rowCount - 1);
-    const int nearestCol =
-        std::clamp(static_cast<int>(std::round((physCol + start.x - bounds_.xMin) / colSpacing_)),
-                   0, colCount - 1);
+    // Equivalent to the indexToCoord expansion but avoids cancellation error:
+    // (yMin + rowSpacing*row + vy - yMin) / rowSpacing == row + vy/rowSpacing.
+    // Division-only expression cannot be fused into FMA, so GPU and CPU agree exactly.
+    const int nearestRow = std::clamp(
+        static_cast<int>(std::round(static_cast<float>(row) + (start.y / rowSpacing_))),
+        0, rowCount - 1);
+    const int nearestCol = std::clamp(
+        static_cast<int>(std::round(static_cast<float>(col) + (start.x / colSpacing_))),
+        0, colCount - 1);
 
     return {nearestRow, nearestCol};
 }
