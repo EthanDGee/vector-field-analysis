@@ -124,32 +124,18 @@ __global__ void compressParentsKernel(int n, int* parent) {
 
 } // namespace
 
-Result computeComponents(const Field::Slice& field, const Field::Bounds& bounds,
-                         unsigned int cudaBlockSize) {
-    const int rows = static_cast<int>(field.size());
-    if (rows == 0) {
+Result computeComponents(const std::vector<Vector::Vec2>& field, int rows, int cols,
+                         const Field::Bounds& bounds, unsigned int cudaBlockSize) {
+    if (rows == 0 || cols == 0) {
         return {};
-    }
-
-    const int cols = static_cast<int>(field[0].size());
-    if (cols == 0) {
-        return {};
-    }
-
-    for (int row = 0; row < rows; ++row) {
-        if (static_cast<int>(field[static_cast<std::size_t>(row)].size()) != cols) {
-            throw std::runtime_error("cuda::computeComponents requires a rectangular field");
-        }
     }
 
     const int total = rows * cols;
 
     std::vector<float2> hostField(static_cast<std::size_t>(total));
-    for (int row = 0; row < rows; ++row) {
-        for (int col = 0; col < cols; ++col) {
-            const auto& v = field[static_cast<std::size_t>(row)][static_cast<std::size_t>(col)];
-            hostField[static_cast<std::size_t>(toIndex(row, col, cols))] = float2{v.x, v.y};
-        }
+    for (int i = 0; i < total; ++i) {
+        const auto& v = field[static_cast<std::size_t>(i)];
+        hostField[static_cast<std::size_t>(i)] = float2{v.x, v.y};
     }
 
     float2* dField = nullptr;
