@@ -63,6 +63,7 @@ cmake -B "$PROJECT_DIR/build" \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
 	-DHDF5_ROOT="$HDF5_ROOT" \
+	-DHDF5_C_LIBRARY_hdf5="$HDF5_ROOT/lib/libhdf5.so" \
 	-DMPI_HOME="$MPI_ROOT" \
 	-S "$PROJECT_DIR" \
 	>/dev/null
