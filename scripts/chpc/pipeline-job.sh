@@ -40,7 +40,7 @@ tmp_dir="$(mktemp -d)"
 base_toml="$tmp_dir/base.toml"
 sed '/^\[analyzer\]/,$d' "$PROJECT_DIR/configs/$STEM.toml" >"$base_toml"
 
-ref_hash=""
+ref_file=""
 ana_failed=0
 
 run_impl() {
@@ -69,12 +69,10 @@ run_impl() {
 		echo "  SKIP (no output file): $label"
 		return 1
 	fi
-	local hash
-	hash=$(h5dump "$tmp_out" | sha256sum | awk '{print $1}')
-	if [[ -z "$ref_hash" ]]; then
-		ref_hash="$hash"
+	if [[ -z "$ref_file" ]]; then
+		ref_file="$tmp_out"
 		echo "  OK (reference): $label"
-	elif [[ "$hash" == "$ref_hash" ]]; then
+	elif h5diff -q "$ref_file" "$tmp_out"; then
 		echo "  OK (match): $label"
 	else
 		echo "  MISMATCH: $label"
