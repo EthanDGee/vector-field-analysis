@@ -66,6 +66,7 @@ cmake -B "$PROJECT_DIR/build" \
 	-DCMAKE_CUDA_ARCHITECTURES="60;61;70;75;80;86" \
 	-DHDF5_ROOT="$HDF5_ROOT" \
 	-DHDF5_C_LIBRARY_hdf5="$HDF5_ROOT/lib/libhdf5.so" \
+	-DCMAKE_INSTALL_RPATH="$HDF5_ROOT/lib" \
 	-DMPI_HOME="$MPI_ROOT" \
 	-S "$PROJECT_DIR" \
 	>/dev/null
