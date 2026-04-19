@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <chrono>
 #include <iostream>
-#include <numeric>
 #include <pthread.h>
 #include <stdexcept>
 #include <utility>
@@ -90,12 +89,19 @@ void* workerFunc(void* arg) {
     // Barrier 3: wait for all roots to be computed.
     pthread_barrier_wait(task->barrier);
 
-    // Pass 2b part 2: Thread 0 sorts indices by root.
-    // (A parallel sort would be better, but std::sort is O(N log N) and already fast).
+    // Pass 2b part 2: Thread 0 groups indices by root via counting sort (O(n)).
     if (task->threadIndex == 0) {
-        std::iota(task->indices, task->indices + totalCells, 0);
-        std::sort(task->indices, task->indices + totalCells,
-                  [&](std::size_t a, std::size_t b) { return task->roots[a] < task->roots[b]; });
+        std::vector<std::size_t> counts(totalCells, 0);
+        for (std::size_t i = 0; i < totalCells; ++i) {
+            counts[task->roots[i]]++;
+        }
+        std::vector<std::size_t> writePos(totalCells, 0);
+        for (std::size_t i = 1; i < totalCells; ++i) {
+            writePos[i] = writePos[i - 1] + counts[i - 1];
+        }
+        for (std::size_t i = 0; i < totalCells; ++i) {
+            task->indices[writePos[task->roots[i]]++] = i;
+        }
     }
 
     // Barrier 4: wait for sorting to complete.

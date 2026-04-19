@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <chrono>
 #include <iostream>
-#include <numeric>
 #include <thread>
 #include <vector>
 
@@ -67,12 +66,20 @@ void OpenMpStreamlineSolver::computeTimeStep(Field::Grid& grid) {
             roots[i] = grid.findRoot(i);
         }
 
-        // Pass 2b part 2: Thread 0 sorts indices by root.
+        // Pass 2b part 2: Thread 0 groups indices by root via counting sort (O(n)).
 #pragma omp single
         {
-            std::iota(indices.begin(), indices.end(), 0);
-            std::sort(indices.begin(), indices.end(),
-                      [&](std::size_t a, std::size_t b) { return roots[a] < roots[b]; });
+            std::vector<std::size_t> counts(totalCells, 0);
+            for (std::size_t i = 0; i < totalCells; ++i) {
+                counts[roots[i]]++;
+            }
+            std::vector<std::size_t> writePos(totalCells, 0);
+            for (std::size_t i = 1; i < totalCells; ++i) {
+                writePos[i] = writePos[i - 1] + counts[i - 1];
+            }
+            for (std::size_t i = 0; i < totalCells; ++i) {
+                indices[writePos[roots[i]]++] = i;
+            }
         }
 
         // Pass 2b part 3: Create paths from segments in parallel.

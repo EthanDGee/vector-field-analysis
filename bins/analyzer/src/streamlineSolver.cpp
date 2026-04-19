@@ -1,8 +1,6 @@
 #include "streamlineSolver.hpp"
 
-#include <algorithm>
 #include <cstddef>
-#include <numeric>
 #include <vector>
 
 std::vector<Field::Path>
@@ -22,29 +20,33 @@ StreamlineSolver::reconstructPathsDSU(const Field::Grid& grid,
         roots[i] = grid.findRoot(i);
     }
 
-    // 2. Sort indices by root to group members of the same component.
-    std::vector<std::size_t> indices(total);
-    std::iota(indices.begin(), indices.end(), 0);
-    std::sort(indices.begin(), indices.end(),
-              [&](std::size_t a, std::size_t b) { return roots[a] < roots[b]; });
+    // 2. Count cells per root (O(n)).
+    std::vector<std::size_t> counts(total, 0);
+    for (std::size_t i = 0; i < total; ++i) {
+        counts[roots[i]]++;
+    }
 
-    // 3. Create paths from contiguous segments of the same root.
+    // 3. Compute write offsets via prefix sum (O(n)).
+    std::vector<std::size_t> offsets(total + 1, 0);
+    for (std::size_t i = 0; i < total; ++i) {
+        offsets[i + 1] = offsets[i] + counts[i];
+    }
+
+    // 4. Scatter cells into a flat buffer grouped by root (O(n)).
+    std::vector<Field::GridCell> buf(total);
+    std::vector<std::size_t> writePos = offsets;
+    for (std::size_t i = 0; i < total; ++i) {
+        buf[writePos[roots[i]]++] = {static_cast<int>(i / colCount),
+                                     static_cast<int>(i % colCount)};
+    }
+
+    // 5. Slice buffer into paths — one contiguous segment per non-empty root (O(n)).
     std::vector<Field::Path> output;
-    std::size_t currentStart = 0;
-    while (currentStart < total) {
-        std::size_t segmentEnd = currentStart + 1;
-        while (segmentEnd < total && roots[indices[segmentEnd]] == roots[indices[currentStart]]) {
-            segmentEnd++;
+    for (std::size_t r = 0; r < total; ++r) {
+        if (counts[r] > 0) {
+            output.emplace_back(buf.begin() + static_cast<std::ptrdiff_t>(offsets[r]),
+                                buf.begin() + static_cast<std::ptrdiff_t>(offsets[r] + counts[r]));
         }
-
-        Field::Path path;
-        for (std::size_t j = currentStart; j < segmentEnd; ++j) {
-            std::size_t idx = indices[j];
-            path.push_back({static_cast<int>(idx / colCount), static_cast<int>(idx % colCount)});
-        }
-        output.push_back(std::move(path));
-
-        currentStart = segmentEnd;
     }
 
     return output;
