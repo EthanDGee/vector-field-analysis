@@ -19,8 +19,7 @@ std::shared_ptr<Streamline> Streamline::resolve() {
 }
 
 void Streamline::absorb(Streamline& other) {
-    path_.insert(path_.end(),
-                 std::make_move_iterator(other.path_.begin()),
+    path_.insert(path_.end(), std::make_move_iterator(other.path_.begin()),
                  std::make_move_iterator(other.path_.end()));
     other.path_.clear();
 }

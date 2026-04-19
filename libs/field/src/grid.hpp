@@ -18,7 +18,7 @@ class Grid {
     const Bounds bounds_;
     std::size_t rows_;
     std::size_t cols_;
-    std::vector<Vector::Vec2> flatField_;  // row-major: index = row*cols_ + col
+    std::vector<Vector::Vec2> flatField_; // row-major: index = row*cols_ + col
     float rowSpacing_;
     float colSpacing_;
     mutable std::vector<std::atomic<std::size_t>> successor_;

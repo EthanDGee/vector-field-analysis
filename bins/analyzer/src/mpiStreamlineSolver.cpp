@@ -58,8 +58,8 @@ void MpiStreamlineSolver::computeTimeStep(Field::Grid& grid) {
                 static_cast<std::size_t>(row) * static_cast<std::size_t>(colCount) +
                 static_cast<std::size_t>(col);
             auto [destRow, destCol] = grid.downstreamCell(row, col);
-            const std::size_t destIdx = grid.coordsToIndex(
-                static_cast<std::size_t>(destRow), static_cast<std::size_t>(destCol));
+            const std::size_t destIdx = grid.coordsToIndex(static_cast<std::size_t>(destRow),
+                                                           static_cast<std::size_t>(destCol));
             grid.unite(srcIdx, destIdx);
         }
     }
@@ -78,8 +78,8 @@ void MpiStreamlineSolver::computeTimeStep(Field::Grid& grid) {
         for (std::size_t i = 0; i < totalCells; ++i)
             localRoots[i] = static_cast<std::uint64_t>(grid.findRoot(i));
 
-        MPI_Allreduce(localRoots.data(), globalRoots.data(), totalCellsInt,
-                      MPI_UINT64_T, MPI_MIN, MPI_COMM_WORLD);
+        MPI_Allreduce(localRoots.data(), globalRoots.data(), totalCellsInt, MPI_UINT64_T, MPI_MIN,
+                      MPI_COMM_WORLD);
 
         int localChanged = 0;
         for (std::size_t i = 0; i < totalCells; ++i) {
@@ -107,17 +107,14 @@ void MpiStreamlineSolver::computeTimeStep(Field::Grid& grid) {
             StreamlineSolver::sortCellsByRoot(roots, totalCells);
 
         const std::size_t cellsPerRank = totalCells / static_cast<std::size_t>(size);
-        const std::size_t remainder    = totalCells % static_cast<std::size_t>(size);
-        const std::size_t startIdx =
-            static_cast<std::size_t>(rank) * cellsPerRank +
-            std::min(static_cast<std::size_t>(rank), remainder);
+        const std::size_t remainder = totalCells % static_cast<std::size_t>(size);
+        const std::size_t startIdx = static_cast<std::size_t>(rank) * cellsPerRank +
+                                     std::min(static_cast<std::size_t>(rank), remainder);
         const std::size_t endIdx =
-            startIdx + cellsPerRank +
-            (static_cast<std::size_t>(rank) < remainder ? 1 : 0);
+            startIdx + cellsPerRank + (static_cast<std::size_t>(rank) < remainder ? 1 : 0);
 
         const std::vector<Field::Path> localPaths = StreamlineSolver::buildPathsForRange(
-            roots, indices, totalCells, colCount, startIdx, endIdx,
-            static_cast<std::size_t>(rank));
+            roots, indices, totalCells, colCount, startIdx, endIdx, static_cast<std::size_t>(rank));
 
         // Serialize local paths: [nPaths, len0, r0, c0, ..., len1, r0, c0, ...]
         std::vector<int> buf;
@@ -147,9 +144,8 @@ void MpiStreamlineSolver::computeTimeStep(Field::Grid& grid) {
             recvBuf.resize(static_cast<std::size_t>(totalBufSize));
         }
 
-        MPI_Gatherv(buf.data(), localSize, MPI_INT,
-                    recvBuf.data(), allSizes.data(), displs.data(), MPI_INT,
-                    0, MPI_COMM_WORLD);
+        MPI_Gatherv(buf.data(), localSize, MPI_INT, recvBuf.data(), allSizes.data(), displs.data(),
+                    MPI_INT, 0, MPI_COMM_WORLD);
 
         if (rank == 0) {
             std::vector<Field::Path> finalPaths;

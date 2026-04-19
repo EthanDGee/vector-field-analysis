@@ -20,12 +20,10 @@ Grid::Grid(Bounds bounds, Slice field)
         }
     }
 
-    rowSpacing_ = (rows_ > 1)
-        ? (bounds_.yMax - bounds_.yMin) / static_cast<float>(rows_ - 1)
-        : 0.0f;
-    colSpacing_ = (cols_ > 1)
-        ? (bounds_.xMax - bounds_.xMin) / static_cast<float>(cols_ - 1)
-        : 0.0f;
+    rowSpacing_ =
+        (rows_ > 1) ? (bounds_.yMax - bounds_.yMin) / static_cast<float>(rows_ - 1) : 0.0f;
+    colSpacing_ =
+        (cols_ > 1) ? (bounds_.xMax - bounds_.xMin) / static_cast<float>(cols_ - 1) : 0.0f;
 
     initializeSuccessors();
 }

@@ -3,8 +3,8 @@
 #include <cstddef>
 #include <vector>
 
-std::vector<std::size_t>
-StreamlineSolver::sortCellsByRoot(const std::vector<std::size_t>& roots, std::size_t total) {
+std::vector<std::size_t> StreamlineSolver::sortCellsByRoot(const std::vector<std::size_t>& roots,
+                                                           std::size_t total) {
     std::vector<std::size_t> counts(total, 0);
     for (std::size_t i = 0; i < total; ++i)
         counts[roots[i]]++;
@@ -23,11 +23,8 @@ StreamlineSolver::sortCellsByRoot(const std::vector<std::size_t>& roots, std::si
 std::vector<Field::Path>
 StreamlineSolver::buildPathsForRange(const std::vector<std::size_t>& roots,
                                      const std::vector<std::size_t>& indices,
-                                     std::size_t totalCells,
-                                     int colCount,
-                                     std::size_t startIdx,
-                                     std::size_t endIdx,
-                                     std::size_t threadIdx) {
+                                     std::size_t totalCells, int colCount, std::size_t startIdx,
+                                     std::size_t endIdx, std::size_t threadIdx) {
     std::vector<Field::Path> localPaths;
     if (startIdx >= endIdx)
         return localPaths;
@@ -45,7 +42,7 @@ StreamlineSolver::buildPathsForRange(const std::vector<std::size_t>& roots,
 
     while (currentStart < endIdx) {
         std::size_t segmentEnd = currentStart + 1;
-        // Scan to the true end of this root's segment — may extend past endIdx,
+        // Scan to the true end of this root's segment -- may extend past endIdx,
         // which is correct: this thread owns all cells of any root it starts.
         while (segmentEnd < totalCells &&
                roots[indices[segmentEnd]] == roots[indices[currentStart]])

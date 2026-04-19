@@ -1,4 +1,5 @@
 #include "openMpStreamlineSolver.hpp"
+
 #include "sequentialStreamlineSolver.hpp"
 #include "streamlineSolver.hpp"
 
@@ -47,8 +48,7 @@ void OpenMpStreamlineSolver::computeTimeStep(Field::Grid& grid) {
         // Pass 2a: Parallel Union-Find.
 #pragma omp for schedule(static)
         for (std::size_t i = 0; i < totalCells; ++i) {
-            const std::size_t destIndex =
-                grid.coordsToIndex(neighbors[i].row, neighbors[i].col);
+            const std::size_t destIndex = grid.coordsToIndex(neighbors[i].row, neighbors[i].col);
             grid.unite(i, destIndex);
         }
 
@@ -67,21 +67,16 @@ void OpenMpStreamlineSolver::computeTimeStep(Field::Grid& grid) {
 
         // Pass 2b part 3: Build paths for this thread's range.
         {
-            const std::size_t segmentsPerThread =
-                totalCells / static_cast<std::size_t>(numThreads);
-            const std::size_t remainderSegments =
-                totalCells % static_cast<std::size_t>(numThreads);
-            const std::size_t startIdx =
-                static_cast<std::size_t>(tid) * segmentsPerThread +
-                std::min(static_cast<std::size_t>(tid), remainderSegments);
-            const std::size_t endIdx =
-                startIdx + segmentsPerThread +
-                (static_cast<std::size_t>(tid) < remainderSegments ? 1 : 0);
+            const std::size_t segmentsPerThread = totalCells / static_cast<std::size_t>(numThreads);
+            const std::size_t remainderSegments = totalCells % static_cast<std::size_t>(numThreads);
+            const std::size_t startIdx = static_cast<std::size_t>(tid) * segmentsPerThread +
+                                         std::min(static_cast<std::size_t>(tid), remainderSegments);
+            const std::size_t endIdx = startIdx + segmentsPerThread +
+                                       (static_cast<std::size_t>(tid) < remainderSegments ? 1 : 0);
 
             localPathsCollection[static_cast<std::size_t>(tid)] =
-                StreamlineSolver::buildPathsForRange(roots, indices, totalCells, colCount,
-                                                     startIdx, endIdx,
-                                                     static_cast<std::size_t>(tid));
+                StreamlineSolver::buildPathsForRange(roots, indices, totalCells, colCount, startIdx,
+                                                     endIdx, static_cast<std::size_t>(tid));
         }
     }
 

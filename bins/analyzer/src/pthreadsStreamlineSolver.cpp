@@ -1,4 +1,5 @@
 #include "pthreadsStreamlineSolver.hpp"
+
 #include "streamlineSolver.hpp"
 
 #include <pthread.h>
@@ -103,8 +104,8 @@ void* workerFunc(void* arg) {
             startIdx + segmentsPerThread + (task->threadIndex < remainderSegments ? 1 : 0);
 
         *task->localPaths = StreamlineSolver::buildPathsForRange(
-            *task->roots, *task->indices, totalCells, colCount,
-            startIdx, endIdx, static_cast<std::size_t>(task->threadIndex));
+            *task->roots, *task->indices, totalCells, colCount, startIdx, endIdx,
+            static_cast<std::size_t>(task->threadIndex));
     }
 
     return nullptr;
@@ -135,8 +136,9 @@ void PthreadsStreamlineSolver::computeTimeStep(Field::Grid& grid) {
         throw std::runtime_error("pthread_barrier_init failed");
 
     for (unsigned int i = 0; i < threadCount_; i++) {
-        threadArgs[i] = {&grid, neighbors.data(), &roots, &indices,
-                         colCount, i, threadCount_, &barrier, &localPathsCollection[i]};
+        threadArgs[i] = {&grid,        neighbors.data(), &roots,
+                         &indices,     colCount,         i,
+                         threadCount_, &barrier,         &localPathsCollection[i]};
         if (pthread_create(&threads[i], nullptr, workerFunc, &threadArgs[i]) != 0) {
             for (unsigned int j = 0; j < i; j++) {
                 pthread_cancel(threads[j]);
