@@ -80,8 +80,8 @@ static void writeAndReport(const std::string& outPath,
 }
 
 void runOne(const std::string& solverName, const Field::TimeSeries& field, unsigned int threadCount,
-            unsigned int cudaBlockSize, int mpiRank, int mpiSize,
-            const std::string& outPath, const std::string& timingOutput) {
+            unsigned int cudaBlockSize, int mpiRank, int mpiSize, const std::string& outPath,
+            const std::string& timingOutput) {
     RunResult result{};
     if (solverName == "mpi") {
         auto solver = makeSolver(solverName, threadCount);
