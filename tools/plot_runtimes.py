@@ -3,7 +3,7 @@ import pandas as pd
 
 df = pd.read_csv("runtime-data/runtimes.csv", index_col=0)
 
-sizes = [128, 256, 512, 1024, 2048, 4096, 8192]
+sizes = [128, 256, 512, 1024, 2048, 4096]
 cols = df.columns
 
 sequential = df.loc["sequential"]
@@ -26,11 +26,11 @@ for impl in df.index:
 
 ax.set_xlabel("Grid Size")
 ax.set_ylabel("Ratio vs Sequential")
-ax.set_title("Comparative Performance Increase Across Implementation")
-ax.legend()
+ax.set_title("Comparative Performance Increase Across Implementations")
+ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=5)
 ax.set_xscale("log")
 ax.set_xticks(sizes)
-ax.set_xticklabels(sizes)
+ax.set_xticklabels([str(s) for s in sizes])
 ax.grid(True)
 
 plt.tight_layout()
