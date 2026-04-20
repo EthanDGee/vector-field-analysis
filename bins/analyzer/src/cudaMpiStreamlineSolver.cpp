@@ -93,7 +93,7 @@ void CudaMpiStreamlineSolver::computeTimeStep(Field::Grid& grid) {
     std::vector<std::uint64_t> localRoots(totalCells);
     std::vector<std::uint64_t> globalRoots(totalCells);
 
-    for (int round = 0; round < size; ++round) {
+    while (true) {
         for (std::size_t i = 0; i < totalCells; ++i) {
             localRoots[i] = static_cast<std::uint64_t>(grid.findRoot(i));
         }

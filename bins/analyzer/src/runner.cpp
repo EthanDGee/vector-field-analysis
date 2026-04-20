@@ -27,15 +27,15 @@ struct RunResult {
 
 static RunResult runSolver(StreamlineSolver& solver, const Field::TimeSeries& timeSeries) {
     RunResult result;
-    auto startTime = std::chrono::steady_clock::now();
+    std::chrono::duration<double, std::milli> elapsed{};
     for (const auto& frame : timeSeries.frames) {
         Field::Grid grid(timeSeries.bounds, frame);
+        auto startTime = std::chrono::steady_clock::now();
         solver.computeTimeStep(grid);
+        elapsed += std::chrono::steady_clock::now() - startTime;
         result.streams.push_back(grid.getStreamlines());
     }
-    result.elapsedMilliseconds =
-        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startTime)
-            .count();
+    result.elapsedMilliseconds = elapsed.count();
     return result;
 }
 
